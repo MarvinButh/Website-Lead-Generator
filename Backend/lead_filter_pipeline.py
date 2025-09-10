@@ -120,7 +120,8 @@ def slugify(text: str) -> str:
         text = re.sub(r"[^\w\s-]", "", text)
         text = re.sub(r"[\s_-]+", "-", text)
         text = re.sub(r"^-+|-+$", "", text)
-        return text or "company"
+        # Ensure lowercase to keep parity with frontend slug generation
+        return (text or "company").lower()
 
 
 def normalize_column_name(col: str) -> str:

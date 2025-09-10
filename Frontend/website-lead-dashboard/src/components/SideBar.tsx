@@ -54,6 +54,23 @@ export default function SideBar() {
       onClick: go("/settings"),
       isActive: pathname === "/settings",
     },
+    {
+        key: "Find Leads",
+        label: "Find Leads",
+        icon: (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="h-5 w-5"
+            aria-hidden
+          >
+            <path d="M10 2a1 1 0 011 1v1.22a7.5 7.5 0 015.92 12.03l3.16 3.16a1 1 0 01-1.42 1.42l-3.16-3.16A7.5 7.5 0 0111.22 4H10V3a1 1 0 00-1-1H7a1 1 0 00-1 1v1H5a3 3 0 00-3 3v2a1 1 0 002 0V6a1 1 0 011-1h1v2H6a3 3 0 00-3 3v2a1 1 0 002 0V9a1 1 0 011-1h1v2H7a3 3 0 00-3 3v2a1 1 0 002 0v-1a1 1 0 011-1h1v2H10v-1a1 1 0 011-1h1.22a7.5 7.5 0 01-.22-15H11V3a1 1 0 00-1-1h-2z" />
+          </svg>
+        ),
+        onClick: go("/find-leads"),
+        isActive: pathname === "/find-leads",
+    }
   ];
 
   return (

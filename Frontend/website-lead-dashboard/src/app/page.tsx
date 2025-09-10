@@ -1,4 +1,7 @@
 import SideBar from "@/components/SideBar";
+import LeadCard from "@/components/LeadCard";
+import LeadSearchForm from "@/components/LeadSearchForm";
+import ManageLeadsActions from "@/components/ManageLeadsActions";
 
 export const dynamic = "force-dynamic";
 
@@ -36,17 +39,13 @@ export default async function Home() {
             Welcome to the Website Lead Dashboard. Here you can find all the information about your leads.
           </p>
 
-          <ul className="mt-6 space-y-3">
+          <LeadSearchForm />
+          <ManageLeadsActions />
+
+          <ul className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {leads.map((l) => (
-              <li key={l.id} className="rounded border border-gray-200 dark:border-gray-800 p-4 bg-white dark:bg-gray-800">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">{l.company_name}</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      {[l.city, l.industry, l.email, l.phone].filter(Boolean).join(" • ")}
-                    </div>
-                  </div>
-                </div>
+              <li key={l.id}>
+                <LeadCard lead={l} />
               </li>
             ))}
             {leads.length === 0 && (
@@ -56,7 +55,7 @@ export default async function Home() {
 
           <footer className="mt-10 border-t border-gray-200 p-4 text-center dark:border-gray-800">
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              &copy; {new Date().getFullYear()} Website Lead Dashboard. All rights reserved.
+              &copy; {new Date().getFullYear()} Marvin Buth. All rights reserved.
             </p>
           </footer>
         </main>

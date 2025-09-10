@@ -1,8 +1,7 @@
 import path from "node:path";
 import { promises as fs } from "node:fs";
-import { notFound } from "next/navigation";
-import { LeadSummary } from "@/components/LeadSummary";
 import SideBar from "@/components/SideBar";
+import ClientLeadSummary from "@/components/ClientLeadSummary";
 
 export const dynamic = "force-dynamic";
 
@@ -11,23 +10,64 @@ type PageProps = {
 };
 
 export default async function LeadPage({ params }: PageProps) {
-  const { slug } = params;
+  const { slug } = await params;
 
-  const baseDir = path.resolve(process.cwd(), "../../Backend/offer-sheets", slug);
+  // Allow override via env for Docker/prod; default to monorepo path
+  const offersRoot = process.env.OFFER_SHEETS_DIR || path.resolve(process.cwd(), "../../Backend/offer-sheets");
 
-  // Ensure the directory for this slug exists
-  try {
-    await fs.access(baseDir);
-  } catch {
-    return notFound();
+  const resolveBaseDir = async (): Promise<string> => {
+    const lc = slug.toLowerCase();
+    const direct = path.join(offersRoot, lc);
+    try {
+      await fs.access(direct);
+      return direct;
+    } catch {}
+    // Fallback: scan for a directory whose lowercased name matches the slug (covers older generations)
+    try {
+      const entries = await fs.readdir(offersRoot, { withFileTypes: true });
+      for (const ent of entries) {
+        if (ent.isDirectory() && ent.name.toLowerCase() === lc) {
+          const candidate = path.join(offersRoot, ent.name);
+          try {
+            await fs.access(candidate);
+            return candidate;
+          } catch {}
+        }
+      }
+    } catch {}
+    return direct; // default path (may not exist yet)
+  };
+
+  let baseDir = await resolveBaseDir();
+
+  const readAssets = async (dir: string) => {
+    const [metaRaw, emailScriptRaw, phoneScriptRaw] = await Promise.all([
+      fs.readFile(path.join(dir, "metadata.json"), "utf-8").catch(() => null),
+      fs.readFile(path.join(dir, "cold_email.md"), "utf-8").catch(() => ""),
+      fs.readFile(path.join(dir, "cold_phone_call.md"), "utf-8").catch(() => ""),
+    ]);
+    return { metaRaw, emailScriptRaw, phoneScriptRaw } as const;
+  };
+
+  let { metaRaw, emailScriptRaw, phoneScriptRaw } = await readAssets(baseDir);
+
+  // Trigger generation if metadata is missing OR both scripts missing
+  if (!metaRaw || (!emailScriptRaw && !phoneScriptRaw)) {
+    try {
+      const base = process.env.API_INTERNAL_BASE || process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+      await fetch(`${base}/leads/${slug}/generate-assets`, { method: "POST", cache: "no-store" });
+      // Re-resolve baseDir in case a new lowercase directory was created
+      baseDir = await resolveBaseDir();
+      // Retry read after generation
+      const res2 = await readAssets(baseDir);
+      metaRaw = res2.metaRaw;
+      emailScriptRaw = res2.emailScriptRaw;
+      phoneScriptRaw = res2.phoneScriptRaw;
+    } catch {
+      // ignore
+      console.log("Error generating assets");
+    }
   }
-
-  // Read metadata and scripts in parallel
-  const [metaRaw, emailScriptRaw, phoneScriptRaw] = await Promise.all([
-    fs.readFile(path.join(baseDir, "metadata.json"), "utf-8").catch(() => null),
-    fs.readFile(path.join(baseDir, "cold_email.md"), "utf-8").catch(() => ""),
-    fs.readFile(path.join(baseDir, "cold_phone_call.md"), "utf-8").catch(() => ""),
-  ]);
 
   const meta = metaRaw ? JSON.parse(metaRaw) : null;
 
@@ -36,7 +76,7 @@ export default async function LeadPage({ params }: PageProps) {
   const pick = (keys: string[]) => {
     const wanted = new Set(keys.map(normalize));
     for (const [k, v] of Object.entries(placeholders)) {
-      if (wanted.has(normalize(k))) return v;
+      if (wanted.has(normalize(k))) return v as string;
     }
     return undefined;
   };
@@ -48,24 +88,26 @@ export default async function LeadPage({ params }: PageProps) {
   const city = pick(["city", "stadt"]);
   const industry = pick(["industry", "kategorie"]);
   const contact = pick(["owner/managername", "ansprechpartner", "name"]);
-  const generatedAt = meta?.generated_at as string | undefined;
+  const generatedAt = (meta?.generated_at as string | undefined) ?? undefined;
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
       <div className="mx-auto flex max-w-7xl">
         <SideBar />
         <main className="flex-1 p-6">
-          <LeadSummary
-            businessName={businessName}
-            phone={phone}
-            email={email}
-            website={website}
-            city={city}
-            industry={industry}
-            contact={contact}
-            emailScript={emailScriptRaw || undefined}
-            phoneScript={phoneScriptRaw || undefined}
-            generatedAt={generatedAt}
+          <ClientLeadSummary
+            fallback={{
+              businessName,
+              phone,
+              email,
+              website,
+              city,
+              industry,
+              contact,
+              emailScript: emailScriptRaw || undefined,
+              phoneScript: phoneScriptRaw || undefined,
+              generatedAt,
+            }}
           />
         </main>
       </div>
