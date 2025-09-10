@@ -1,0 +1,68 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: ws_db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-website_service}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./Backend
+    container_name: ws_backend
+    env_file:
+      - ./.env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-website_service}}
+      PYTHONUNBUFFERED: "1"
+      PYTHONPATH: /app
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./Backend:/app
+      - ./templates:/templates
+      - ./scripts:/scripts
+    ports:
+      - "8000:8000"
+    command: ["bash", "-lc", "uvicorn src.api.main:app --host 0.0.0.0 --port 8000"]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import sys,urllib.request; import urllib.error; url=\"http://localhost:8000/healthz\";\ntry:\n r=urllib.request.urlopen(url, timeout=3); sys.exit(0 if getattr(r, \"status\", 200)==200 else 1)\nexcept Exception:\n sys.exit(1)' "]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  frontend:
+    build:
+      context: ./Frontend/website-lead-dashboard
+    container_name: ws_frontend
+    env_file:
+      - ./.env
+    environment:
+      NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-http://localhost:8000}
+      API_INTERNAL_BASE: http://backend:8000
+    ports:
+      - "3000:3000"
+    entrypoint: ["/bin/sh", "-lc"]
+    command: ["pnpm install --frozen-lockfile || npm install -g pnpm && pnpm install && pnpm dev"]
+    volumes:
+      - ./Frontend/website-lead-dashboard:/usr/src/app
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  db_data:

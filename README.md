@@ -1,8 +1,35 @@
 # Website Service Monorepo
 
-- Frontend: NextJS dashboard (to be created)
-- Backend: Python pipelines for lead generation and offer building
-- templates: Shared templates (docx, html, markdown i18n)
+This monorepo contains:
+- Backend (Python): lead pipelines and offer generation + FastAPI server
+- Frontend (Next.js): lead dashboard
+- Templates: shared docx, html, and localized markdown
+
+## Quick start (Docker)
+
+1. Copy `.env.example` to `.env` and adjust values.
+2. Build and start services:
+   - docker compose up --build
+3. Services:
+   - Postgres on localhost:5432
+   - Backend API on http://localhost:8000 (FastAPI)
+   - Frontend on http://localhost:3000
+
+Import existing Excel leads into the DB:
+- docker compose run --rm backend bash -lc "python -c 'from src.db.models.lead import Base; from src.db.engine import engine; Base.metadata.create_all(engine)' && python /scripts/migrate_from_files.py"
+
+Generate offers locally from DB (inside backend container):
+- docker compose run --rm backend bash -lc "python lead_filter_pipeline.py --use-db -t /templates/docx/Angebot-Webseitenservice.docx -o /app/offer-sheets -v"
+
+## Local dev (without Docker)
+- Python backend
+  - pip install -r Backend/requirements.txt
+  - export PYTHONPATH=$PWD/Backend
+  - export DATABASE_URL=postgresql+psycopg2://USER:PASS@HOST:PORT/DB
+  - uvicorn src.api.main:app --reload
+  - python Backend/lead_filter_pipeline.py --use-db
+- Frontend
+  - cd Frontend/website-lead-dashboard && pnpm install && pnpm dev
 
 ## Structure
 - Backend/
@@ -10,23 +37,17 @@
   - requirements.txt
   - lead_filter_pipeline.py
   - lead_auto_pipeline_de.py
+  - src/api/main.py (FastAPI)
 - Frontend/
-  - (NextJS goes here later)
+  - website-lead-dashboard: Next.js app
 - templates/
   - docx/: Word template(s)
   - html/: HTML fragments/templates for summary pages
-  - tsx/: React components for the dashboard (e.g. LeadSummary.tsx)
   - <lang>/ cold_*_template.md: outreach templates (used by backend and frontend)
 
-## Quick start
-
-1. Copy .env.example to .env and fill values.
-2. Install backend deps: pip install -r Backend/requirements.txt
-3. Run: ./start.sh
-
 ## Notes
-Do not create the Next.js app yet. This repo is prepared for it.
+You can switch pipeline to DB with `--use-db` (default Excel).
 
-## Frontend note (for later)
-- Use `templates/tsx/LeadSummary.tsx` in the Next.js app to render a lead card.
-- Pass in props with phone/email/website/city/industry/contact and the contents of `cold_email.md` and `cold_phone_call.md` for each lead.
+## Endpoints
+- GET /healthz
+- GET /leads

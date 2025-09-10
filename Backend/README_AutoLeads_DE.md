@@ -27,3 +27,7 @@ Dieses kleine Toolkit hilft dir, **lokale Unternehmen ohne (eigene) Website** zu
 - `KEYWORDS`: Wähle 1–3 Nischen (z.B. „Bäckerei, Friseur, Klempner“).
 - `USE_OVERPASS=true`: Aktiviert OSM-Quelle (mehr Breite, aber unvollständige Felder).
 - Scoring-Regeln im Script (`score_row`) anpassen.
+
+## Datenbank & API
+- Die Anwendung kann Leads aus der Postgres-DB lesen (`--use-db`) oder aus Excel (Standard).
+- Ein leichter API-Server (FastAPI) bietet `/healthz` und `/leads` Endpunkte – optional für Frontend-Integration.

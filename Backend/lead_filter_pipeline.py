@@ -19,6 +19,18 @@ except (ImportError, AttributeError) as exc:
     ) from exc
 from unidecode import unidecode
 
+# --- Optional DB imports (work in local and Docker) ---
+try:
+        from src.db.engine import SessionLocal  # running inside Backend Docker image
+        from src.db.models.lead import Lead
+except Exception:
+        try:
+                from Backend.src.db.engine import SessionLocal  # running from repo root locally
+                from Backend.src.db.models.lead import Lead
+        except Exception:
+                SessionLocal = None
+                Lead = None
+
 #!/usr/bin/env python3
 """
 Generate offer sheets for leads without a proper website (empty website field or containing a Facebook link).
@@ -58,9 +70,20 @@ Run:
 # New: resolve paths relative to monorepo root (this file lives in Backend/)
 ROOT_DIR = Path(__file__).resolve().parents[1]
 
+# Detect templates root (prefer env var or /templates in Docker, fallback to repo templates/)
+_TEMPLATES_DIR_ENV = os.getenv("TEMPLATES_DIR")
+if _TEMPLATES_DIR_ENV:
+        TEMPLATES_ROOT = Path(_TEMPLATES_DIR_ENV)
+else:
+        docker_tpl = Path("/templates")
+        if docker_tpl.exists():
+                TEMPLATES_ROOT = docker_tpl
+        else:
+                TEMPLATES_ROOT = ROOT_DIR / "templates"
+
 # Defaults now point to new locations
 DEFAULT_EXCEL = str(ROOT_DIR / "Backend" / "data" / "Leads-Auto-Ergebnis.xlsx")
-DEFAULT_TEMPLATE = str(ROOT_DIR / "templates" / "docx" / "Angebot-Webseitenservice.docx")
+DEFAULT_TEMPLATE = str(TEMPLATES_ROOT / "docx" / "Angebot-Webseitenservice.docx")
 DEFAULT_OUTPUT_DIR = str(ROOT_DIR / "Backend" / "offer-sheets")
 
 WEBSITE_COLUMN_CANDIDATES = ["website", "webseite", "url"]
@@ -231,10 +254,10 @@ def replace_placeholders_in_text(text: str, mapping: Dict[str, str]) -> str:
 
 def generate_text_templates_for_offer(row: pd.Series, mapping: Dict[str, str], target_dir: Path,
                                       email_template: Path, phone_template: Path, overwrite: bool = False):
-        # Use monorepo root for resolving templates
-        templates_root = ROOT_DIR
+        # Use templates root for resolving templates
+        templates_root = TEMPLATES_ROOT
 
-        # Resolve templates relative to repo root if not absolute
+        # Resolve templates relative to templates root if not absolute
         email_tpl = email_template if email_template.is_absolute() else (templates_root / email_template)
         phone_tpl = phone_template if phone_template.is_absolute() else (templates_root / phone_template)
 
@@ -262,6 +285,35 @@ def load_excel(excel_path: Path) -> pd.DataFrame:
         if df.empty:
                 logging.warning("Excel file is empty.")
         return df
+
+
+def load_from_db() -> pd.DataFrame:
+        """Load leads from Postgres and normalize to the expected DataFrame shape."""
+        # Try both import roots for local and Docker
+        try:
+                from src.db.engine import SessionLocal as _SessionLocal
+                from src.db.models.lead import Lead as _Lead
+        except Exception:
+                try:
+                        from Backend.src.db.engine import SessionLocal as _SessionLocal
+                        from Backend.src.db.models.lead import Lead as _Lead
+                except Exception as e:
+                        raise RuntimeError("DB not available. Set PYTHONPATH correctly and install SQLAlchemy.") from e
+        with _SessionLocal() as session:
+                rows = session.query(_Lead).all()
+                data = [
+                        {
+                                "Company": r.company_name,
+                                "Website": r.website,
+                                "Email": r.email,
+                                "Phone": r.phone,
+                                "City": getattr(r, "city", None),
+                                "Industry": getattr(r, "industry", None),
+                                "Ansprechpartner": getattr(r, "contact", None),
+                        }
+                        for r in rows
+                ]
+        return pd.DataFrame(data)
 
 
 def filter_rows(df: pd.DataFrame, website_col: str) -> pd.DataFrame:
@@ -400,7 +452,7 @@ def generate_lead_html(row: pd.Series, company_name: str, target_dir: Path, mapp
         ) if phone_md else ""
 
         # Load the external HTML template
-        tpl_path = ROOT_DIR / "templates" / "html" / "lead_summary_template.html"
+        tpl_path = TEMPLATES_ROOT / "html" / "lead_summary_template.html"
         html_tpl = load_text_template(tpl_path)
         if not html_tpl:
                 logging.error(f"HTML template not found: {tpl_path}")
@@ -575,7 +627,7 @@ def generate_offer(
         try:
                 # Determine language from environment (.env) or fallback to 'en'
                 lang = (os.getenv("TEMPLATE_LANG") or os.getenv("LANG") or "en").strip()
-                templates_dir = ROOT_DIR / "templates"
+                templates_dir = TEMPLATES_ROOT
                 email_tpl = templates_dir / lang / "cold_email_template.md"
                 phone_tpl = templates_dir / lang / "cold_phone_call_template.md"
 
@@ -629,6 +681,7 @@ def main():
         parser.add_argument("-o", "--output", default=DEFAULT_OUTPUT_DIR, help="Output root directory.")
         parser.add_argument("--overwrite", action="store_true", help="Overwrite existing generated offers.")
         parser.add_argument("-v", "--verbose", action="store_true", help="Verbose logging.")
+        parser.add_argument("--use-db", action="store_true", help="Read leads from Postgres instead of Excel.")
         args = parser.parse_args()
 
         setup_logging(args.verbose)
@@ -645,17 +698,27 @@ def main():
         template_path = Path(args.template)
         output_root = Path(args.output)
 
-        if not excel_path.is_file():
-                logging.error(f"Excel file not found: {excel_path}")
-                sys.exit(1)
         if not template_path.is_file():
                 logging.error(f"Template DOCX not found: {template_path}")
                 sys.exit(1)
 
-        df = load_excel(excel_path)
-        if df.empty:
-                logging.info("No rows found in Excel file; nothing to do.")
-                return
+        if args.use_db:
+                try:
+                        df = load_from_db()
+                except Exception as e:
+                        logging.error(f"Failed loading from DB: {e}")
+                        sys.exit(1)
+                if df.empty:
+                        logging.info("No rows found in database; nothing to do.")
+                        return
+        else:
+                if not excel_path.is_file():
+                        logging.error(f"Excel file not found: {excel_path}")
+                        sys.exit(1)
+                df = load_excel(excel_path)
+                if df.empty:
+                        logging.info("No rows found in Excel file; nothing to do.")
+                        return
 
         # Determine columns
         try:

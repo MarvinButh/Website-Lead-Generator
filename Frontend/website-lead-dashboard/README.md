@@ -34,3 +34,16 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+# Website Lead Dashboard
+
+Runs inside Docker with docker compose.
+
+Local dev:
+- pnpm install
+- pnpm dev
+
+## API
+This app reads leads from the backend FastAPI service.
+- Configure the base URL via `NEXT_PUBLIC_API_BASE` (defaults to `http://localhost:8000`).
+- The list on the homepage fetches `GET /leads` server-side.

@@ -110,3 +110,17 @@ temp/
 coverage/
 artifact/
 reports/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Data/artifacts
+Backend/offer-sheets/
+Backend/data/*.xlsx
+
+# Docker
+volumes/
+scripts/migrate_from_files.py
