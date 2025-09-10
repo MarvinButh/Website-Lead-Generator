@@ -12,6 +12,8 @@ export type SelectedLead = {
   industry?: string | null;
   contact?: string | null;
   slug?: string;
+  interested?: boolean | null;
+  address?: string | null; // added: optional full address
 };
 
 type SelectedLeadContextType = {

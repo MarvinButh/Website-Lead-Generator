@@ -1,3 +1,5 @@
+'use client';
+
 import React from "react";
 
 export type LeadSummaryProps = {
@@ -8,9 +10,13 @@ export type LeadSummaryProps = {
   city?: string;
   industry?: string;
   contact?: string;
+  address?: string; // added: full address for maps
   phoneScript?: string; // contents of cold_phone_call.md
   emailScript?: string; // contents of cold_email.md
   generatedAt?: string;
+  // New: optional lead id and interested state for client-side actions
+  leadId?: number;
+  interested?: boolean | null;
 };
 
 export function LeadSummary({
@@ -21,13 +27,44 @@ export function LeadSummary({
   city,
   industry,
   contact,
+  address,
   phoneScript,
   emailScript,
   generatedAt,
+  leadId,
+  interested,
 }: LeadSummaryProps) {
+  const [interestedState, setInterestedState] = React.useState<boolean | null>(
+    interested ?? null
+  );
+  const [updating, setUpdating] = React.useState<string | null>(null);
+
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+
+  const setInterested = async (val: boolean | null) => {
+    if (!leadId) return;
+    setUpdating(val === true ? "interested" : val === false ? "discard" : "clear");
+    try {
+      const res = await fetch(`${apiBase}/leads/${leadId}/interested`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ interested: val }),
+      });
+      if (!res.ok) throw new Error(`Status ${res.status}`);
+      const j = await res.json();
+      if (j.ok) setInterestedState(j.interested ?? null);
+    } catch {
+      // ignore
+    } finally {
+      setUpdating(null);
+    }
+  };
+
   const phoneHref = phone ? `tel:${phone.replace(/[^0-9+]+/g, "")}` : "";
   const emailHref = email ? `mailto:${email}` : "";
   const websiteHref = website && !/^https?:\/\//i.test(website) ? `http://${website}` : website || "";
+
+  const mapsQuery = address ? `${businessName} ${address}` : businessName + (city ? ' ' + city : '');
 
   return (
     <div className="bg-gray-50 dark:bg-gray-900 min-h-screen flex items-center justify-center p-6">
@@ -130,6 +167,32 @@ export function LeadSummary({
             {generatedAt && (
               <p className="mt-6 text-xs text-gray-500 dark:text-gray-400">Generated {generatedAt}</p>
             )}
+
+            {/* Action buttons */}
+            <div className="mt-6 flex items-center gap-3">
+              <button
+                onClick={() => setInterested(true)}
+                disabled={!leadId || updating !== null || interestedState === true}
+                className="inline-flex items-center justify-center rounded bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {interestedState === true ? "Interested" : updating === "interested" ? "..." : "Mark Interested"}
+              </button>
+              <button
+                onClick={() => setInterested(false)}
+                disabled={!leadId || updating !== null || interestedState === false}
+                className="inline-flex items-center justify-center rounded bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {interestedState === false ? "Discarded" : updating === "discard" ? "..." : "Discard"}
+              </button>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                Open Maps
+              </a>
+            </div>
           </div>
         </section>
       </main>

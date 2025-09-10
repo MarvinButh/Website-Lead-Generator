@@ -1,6 +1,6 @@
 import os
 from typing import List
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from pathlib import Path
@@ -57,8 +57,11 @@ class LeadOut(BaseModel):
     city: str | None = None
     industry: str | None = None
     contact: str | None = None
+    interested: bool | None = None
 
     class Config:
+        orm_mode = True
+        # Keep pydantic v2 compatibility flag if available
         from_attributes = True
 
 
@@ -91,6 +94,31 @@ async def list_leads():
     with SessionLocal() as session:
         rows = session.query(Lead).order_by(Lead.id.desc()).limit(250).all()
         return rows
+
+
+@app.get("/leads/{lead_id}", response_model=LeadOut)
+async def get_lead(lead_id: int):
+    with SessionLocal() as session:
+        row = session.query(Lead).filter(Lead.id == lead_id).first()
+        if not row:
+            raise HTTPException(status_code=404, detail="lead not found")
+        return row
+
+
+@app.patch("/leads/{lead_id}/interested")
+async def update_interested(lead_id: int, payload: dict):
+    """Payload: { "interested": true|false|null }"""
+    val = payload.get("interested") if isinstance(payload, dict) else None
+    if val not in (True, False, None):
+        raise HTTPException(status_code=400, detail="invalid interested value")
+    with SessionLocal() as session:
+        row = session.query(Lead).filter(Lead.id == lead_id).first()
+        if not row:
+            raise HTTPException(status_code=404, detail="lead not found")
+        row.interested = val
+        session.add(row)
+        session.commit()
+        return {"ok": True, "interested": row.interested}
 
 
 # Helper to resolve offers root directory (supports Docker shared volume)

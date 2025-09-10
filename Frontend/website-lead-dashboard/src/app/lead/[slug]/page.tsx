@@ -82,13 +82,34 @@ export default async function LeadPage({ params }: PageProps) {
   };
 
   const businessName: string = meta?.company ?? pick(["businessname", "firmenname"]) ?? slug;
-  const phone = pick(["phone", "telefon"]);
-  const email = pick(["email", "e-mail", "e_mail"]);
-  const website = pick(["website", "webseite", "url"]);
+  let phone = pick(["phone", "telefon"]);
+  let email = pick(["email", "e-mail", "e_mail"]);
+  let website = pick(["website", "webseite", "url"]);
   const city = pick(["city", "stadt"]);
   const industry = pick(["industry", "kategorie"]);
   const contact = pick(["owner/managername", "ansprechpartner", "name"]);
+  const address = pick(["address", "adresse", "anschrift", "streetaddress", "straße", "strasse"]);
   const generatedAt = (meta?.generated_at as string | undefined) ?? undefined;
+
+  // Sanitize fallbacks: do not show sender env values (YOUR_EMAIL/YOUR_PHONE/YOUR_WEBSITE) as lead data
+  const senderEmail = process.env.YOUR_EMAIL || "";
+  const senderPhone = process.env.YOUR_PHONE || "";
+  const senderWebsite = process.env.YOUR_WEBSITE || "";
+
+  const normalizeUrl = (u?: string | undefined) => {
+    if (!u) return "";
+    return u.replace(/^https?:\/\//i, "").replace(/\/$/, "").toLowerCase();
+  };
+
+  if (email && senderEmail && email.trim() === senderEmail.trim()) {
+    email = undefined;
+  }
+  if (phone && senderPhone && phone.trim() === senderPhone.trim()) {
+    phone = undefined;
+  }
+  if (website && senderWebsite && normalizeUrl(website) === normalizeUrl(senderWebsite)) {
+    website = undefined;
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
@@ -101,9 +122,11 @@ export default async function LeadPage({ params }: PageProps) {
               phone,
               email,
               website,
+              address,
               city,
               industry,
               contact,
+              interested: null,
               emailScript: emailScriptRaw || undefined,
               phoneScript: phoneScriptRaw || undefined,
               generatedAt,

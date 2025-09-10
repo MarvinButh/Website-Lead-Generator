@@ -31,3 +31,25 @@ Dieses kleine Toolkit hilft dir, **lokale Unternehmen ohne (eigene) Website** zu
 ## Datenbank & API
 - Die Anwendung kann Leads aus der Postgres-DB lesen (`--use-db`) oder aus Excel (Standard).
 - Ein leichter API-Server (FastAPI) bietet `/healthz` und `/leads` Endpunkte – optional für Frontend-Integration.
+
+## Alembic migrations
+
+This project uses Alembic for schema migrations. Alembic configuration and migration scripts live under `Backend/alembic/`.
+
+To run migrations locally (ensure your Python environment has the project's requirements installed):
+
+1. Set the `DATABASE_URL` environment variable to your database connection (example uses psycopg2):
+
+   export DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/website_service
+
+2. From the repository root run (ensure you're in the Backend folder or adjust paths):
+
+   cd Backend
+   source .venv/bin/activate  # optional if using a venv
+   alembic -c alembic.ini upgrade head
+
+To generate a new migration after modifying models:
+
+   alembic -c alembic.ini revision --autogenerate -m "describe change"
+
+Legacy raw SQL migration scripts previously in `Backend/scripts/` have been archived and removed from the active repository; Alembic is now the single source of truth for schema changes.

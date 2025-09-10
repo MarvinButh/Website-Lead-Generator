@@ -1,5 +1,6 @@
 from typing import Iterable, List
 from sqlalchemy.orm import Session
+from sqlalchemy import inspect
 from ..models.lead import Lead
 
 class LeadRepository:
@@ -8,8 +9,17 @@ class LeadRepository:
 
     def upsert_many(self, leads: Iterable[dict]) -> int:
         count = 0
+        # Inspect DB columns for 'leads' table and only pass known keys to the model
+        try:
+            inspector = inspect(self.session.bind)
+            cols = {c['name'] for c in inspector.get_columns('leads')}
+        except Exception:
+            cols = set()
+
         for data in leads:
-            lead = Lead(**data)
+            # Filter out any keys not present in the DB table to avoid insert errors
+            filtered = {k: v for k, v in data.items() if not cols or k in cols}
+            lead = Lead(**filtered)
             self.session.add(lead)
             count += 1
         self.session.commit()

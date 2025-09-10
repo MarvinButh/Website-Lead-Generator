@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from sqlalchemy.orm import declarative_base
 from datetime import datetime
 
@@ -16,9 +16,10 @@ class Lead(Base):
     industry = Column(String, nullable=True)
     contact = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    interested = Column(Boolean, nullable=True)
 
     def __repr__(self):
         return (
             f"<Lead(id={self.id}, company_name='{self.company_name}', website='{self.website}', "
-            f"email='{self.email}', phone='{self.phone}')>"
+            f"email='{self.email}', phone='{self.phone}', interested={self.interested})>"
         )
