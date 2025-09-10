@@ -1,0 +1,112 @@
+# Node / JavaScript
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-debug.log
+.pnpm-store/
+.pnp.*
+node_modules/.cache/
+
+# Next.js
+.next/
+.next/cache/
+out/
+dist/
+build/
+.next/static/
+/.vercel/
+.vercel/output/
+.now/
+.now-logs/
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+.env.*.secret
+# keep example files in repo
+!.env.example
+
+# Logs
+logs/
+*.log
+*.log.*
+/npm-debug.log*
+/yarn-debug.log*
+/yarn-error.log*
+
+# Testing / coverage
+coverage/
+coverage-*.json
+lcov-report/
+jest-cache/
+.jest/
+.vitest/
+
+# TypeScript
+*.tsbuildinfo
+
+# Editor / IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+
+# Package manager / lock/caches (keep lockfiles tracked)
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+.yarn/*/releases/
+# if using Yarn v2/v3, keep relevant runtime files but ignore caches
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/patches
+
+# Misc build/tooling caches
+.cache/
+.cache-loader/
+parcel-cache/
+.history/
+.nuxt/
+.next-tmp/
+dist-ssr/
+
+# Docker
+docker-compose.override.yml
+docker-compose.*.yml
+
+# Certificates / keys / secrets
+*.pem
+*.key
+*.crt
+credentials.json
+secrets.* 
+
+# Misc temporary files
+tmp/
+temp/
+*.tmp
+*.swp
+*.swo
+
+# Editor swap & backup
+*~ 
+*.orig
+
+# CI artifacts
+coverage/
+artifact/
+reports/
