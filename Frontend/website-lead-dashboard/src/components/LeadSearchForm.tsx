@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 
 export default function LeadSearchForm() {
   // Prefer user overrides stored in localStorage over build-time env vars.
-  const STORAGE_KEY = "lead_settings_v1";
+  const STORAGE_KEY = "lead_settings_v2"; // prefer v2, fall back to v1 below
 
   const envDefaultKeywords = process.env.NEXT_PUBLIC_DEFAULT_KEYWORDS || "";
   const envDefaultCity = process.env.NEXT_PUBLIC_DEFAULT_CITY || "";
@@ -25,18 +25,26 @@ export default function LeadSearchForm() {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      // Try v2 first, fall back to v1 for older installs
+      const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("lead_settings_v1");
       if (raw) {
         const parsed = JSON.parse(raw);
-        const o = parsed?.overrides;
+        const o = parsed?.overrides || parsed?.overrides; // overrides expected in both v2 and v1
         if (o) {
           if (typeof o.defaultKeywords === "string" && o.defaultKeywords.length) setKeywords(o.defaultKeywords);
           if (typeof o.defaultCity === "string" && o.defaultCity.length) setCity(o.defaultCity);
           if (typeof o.defaultCountryCode === "string" && o.defaultCountryCode.length) setCountryCode(o.defaultCountryCode);
           if (typeof o.defaultUseOverpass === "boolean") setUseOverpass(o.defaultUseOverpass);
-          // defaultAutoFilter isn't part of overrides in current settings page; respect stored value if present
+          // Respect a stored auto-filter flag if present
           if (typeof o.defaultAutoFilter === "boolean") setAutoFilter(o.defaultAutoFilter);
           if (typeof o.apiBase === "string" && o.apiBase.length) setApiBase(o.apiBase);
+        }
+
+        // older versions might store defaults under `defaults` — be tolerant
+        const d = parsed?.defaults;
+        if (d) {
+          if (typeof d.country === "string" && d.country.length) setCountryCode((prev) => prev || d.country);
+          if (typeof d.industries === "string" && d.industries.length) setKeywords((prev) => prev || d.industries);
         }
       }
     } catch (err) {

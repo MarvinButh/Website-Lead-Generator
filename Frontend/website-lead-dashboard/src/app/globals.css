@@ -1,14 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f7fafc; /* light gray */
+  --foreground: #111827; /* gray-900 */
+  --navy-900: #071226;
+  --navy-800: #0b1226;
+  --brand: #6366f1; /* indigo-500 */
 }
 
 /* When ThemeProvider toggles `.dark` on <html>, update variables */
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --background: #071226; /* deep navy */
+  --foreground: #e6eef8; /* soft light */
+}
+
+html, body, #__next {
+  height: 100%;
+  min-height: 100%;
 }
 
 body {
@@ -16,3 +24,13 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Fallback helpers in case Tailwind config doesn't map bg-background/text-foreground to CSS vars */
+.bg-background { background: var(--background) !important; }
+.text-foreground { color: var(--foreground) !important; }
+
+/* small helper to constrain main content and provide breathing room */
+.app-main-container { padding: 1.25rem; }
+
+/* ensure sticky header does not overlap content when scrolling to anchors */
+:root { scroll-padding-top: 5rem; }

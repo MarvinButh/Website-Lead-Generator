@@ -55,8 +55,8 @@ export default function SideBar() {
       isActive: pathname === "/settings",
     },
     {
-        key: "Find Leads",
-        label: "Find Leads",
+        key: "leads",
+        label: "Leads",
         icon: (
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -68,55 +68,55 @@ export default function SideBar() {
             <path d="M10 2a1 1 0 011 1v1.22a7.5 7.5 0 015.92 12.03l3.16 3.16a1 1 0 01-1.42 1.42l-3.16-3.16A7.5 7.5 0 0111.22 4H10V3a1 1 0 00-1-1H7a1 1 0 00-1 1v1H5a3 3 0 00-3 3v2a1 1 0 002 0V6a1 1 0 011-1h1v2H6a3 3 0 00-3 3v2a1 1 0 002 0V9a1 1 0 011-1h1v2H7a3 3 0 00-3 3v2a1 1 0 002 0v-1a1 1 0 011-1h1v2H10v-1a1 1 0 011-1h1.22a7.5 7.5 0 01-.22-15H11V3a1 1 0 00-1-1h-2z" />
           </svg>
         ),
-        onClick: go("/find-leads"),
-        isActive: pathname === "/find-leads",
+        onClick: go("/leads"),
+        isActive: pathname === "/leads",
     }
   ];
 
   return (
-    <aside className="flex h-screen w-64 flex-col border-r border-gray-200 bg-white text-gray-800 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100">
+    <aside className="flex h-full w-64 flex-col border-r border-gray-200 bg-white text-gray-800 dark:border-[#0b1226] dark:bg-[#071226] dark:text-gray-100">
       {/* Top brand */}
-      <div className="flex items-center gap-3 p-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-md bg-blue-600 text-white">
+      <div className="flex items-center gap-3 p-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-md bg-indigo-600 text-white">
           {/* Simple logo glyph */}
           <span className="text-lg font-bold">WL</span>
         </div>
         <div>
           <div className="text-sm uppercase tracking-wider text-gray-500 dark:text-gray-400">Website</div>
-          <div className="text-base font-semibold">Lead Dashboard</div>
+          <div className="text-base font-semibold text-gray-100 dark:text-gray-100">Lead Dashboard</div>
         </div>
       </div>
-      <div className="border-t border-gray-200 dark:border-gray-800" />
+      <div className="border-t border-gray-200 dark:border-[#071826]" />
 
       {/* Navigation */}
-      <nav className="flex-1 p-2">
+      <nav className="flex-1 px-2 py-3">
         {items.map((item) => (
           <button
             key={item.key}
             onClick={item.onClick}
-            className={`group flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors hover:bg-gray-100 hover:dark:bg-gray-800 ${
-              item.isActive ? "bg-gray-100 dark:bg-gray-800" : ""
+            className={`group flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors hover:bg-gray-100 dark:hover:bg-slate-700 ${
+              item.isActive ? "bg-gray-100 dark:bg-slate-700" : ""
             }`}
           >
-            <span className="text-gray-500 group-hover:text-gray-700 dark:text-gray-400 group-hover:dark:text-gray-200">
+            <span className="text-gray-500 group-hover:text-gray-700 dark:text-gray-300 group-hover:dark:text-gray-100">
               {item.icon}
             </span>
-            <span>{item.label}</span>
+            <span className="truncate">{item.label}</span>
           </button>
         ))}
       </nav>
 
-      <div className="border-t border-gray-200 dark:border-gray-800" />
+      <div className="border-t border-gray-200 dark:border-[#071826]" />
 
       {/* Bottom section: dark mode + help */}
-      <div className="p-2">
+      <div className="p-3">
         <button
           onClick={toggle}
-          className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm hover:bg-gray-100 hover:dark:bg-gray-800"
+          className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700"
           aria-label="Toggle dark mode"
         >
           <span className="flex items-center gap-3">
-            <span className="text-gray-500 dark:text-gray-400" aria-hidden>
+            <span className="text-gray-500 dark:text-gray-300" aria-hidden>
               {isDark ? (
                 // Moon icon
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
@@ -133,7 +133,7 @@ export default function SideBar() {
           </span>
           <span
             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-              isDark ? "bg-blue-600" : "bg-gray-300"
+              isDark ? "bg-indigo-600" : "bg-gray-300"
             }`}
             role="switch"
             aria-checked={isDark}
@@ -149,7 +149,7 @@ export default function SideBar() {
         <div className="mt-2">
           <button
             onClick={go("/help")}
-            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-gray-100 hover:dark:bg-gray-800"
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-700"
           >
             <span className="flex h-5 w-5 items-center justify-center rounded-full border text-xs">?</span>
             <span>Help</span>

@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -34,15 +34,30 @@ except Exception:
 app = FastAPI(title="Website Service API")
 
 # CORS for local dev (Next.js runs on 3000 by default)
-origins = [
-    os.getenv("FRONTEND_ORIGIN", "http://localhost:3000"),
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+# Flexible CORS configuration: FRONTEND_ORIGIN may be a single origin, a comma-separated list, or "*" to allow all origins in development.
+raw_origins = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000").strip()
+if raw_origins == "*":
+    allow_origins = ["*"]
+else:
+    allow_origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
+    # always include common localhost ports used by Next.js dev server
+    allow_origins.extend(["http://localhost:3000", "http://127.0.0.1:3000"])
+    # dedupe while preserving order
+    seen = set()
+    deduped = []
+    for o in allow_origins:
+        if o not in seen:
+            deduped.append(o)
+            seen.add(o)
+    allow_origins = deduped
+
+# Toggle whether cookies/credentials are allowed in CORS. Default false to be safe when using "*".
+allow_credentials = (os.getenv("CORS_ALLOW_CREDENTIALS", "false").lower() == "true")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=list(set(origins)),
-    allow_credentials=True,
+    allow_origins=allow_origins,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -89,11 +104,30 @@ async def healthz():
     return {"status": "ok"}
 
 
-@app.get("/leads", response_model=List[LeadOut])
-async def list_leads():
+@app.get("/leads")
+async def list_leads(page: int = 1, page_size: int = 250, q: Optional[str] = None):
+    """List leads with optional text filter and pagination. Returns { items, total }."""
+    # enforce sane bounds
+    page = max(1, int(page))
+    page_size = max(1, min(1000, int(page_size)))
+    offset = (page - 1) * page_size
+
     with SessionLocal() as session:
-        rows = session.query(Lead).order_by(Lead.id.desc()).limit(250).all()
-        return rows
+        query = session.query(Lead)
+        if q:
+            term = f"%{q}%"
+            # search across common text fields
+            query = query.filter(
+                (Lead.company_name.ilike(term)) |
+                (Lead.city.ilike(term)) |
+                (Lead.industry.ilike(term)) |
+                (Lead.email.ilike(term)) |
+                (Lead.phone.ilike(term))
+            )
+        total = query.count()
+        rows = query.order_by(Lead.id.desc()).offset(offset).limit(page_size).all()
+        items = [r for r in rows]
+        return {"items": items, "total": total}
 
 
 @app.get("/leads/{lead_id}", response_model=LeadOut)

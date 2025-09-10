@@ -3,7 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function ManageLeadsActions() {
+type Props = {
+  // optional pagination props — when provided render Prev/Next on the right
+  page?: number;
+  setPage?: (n: number) => void;
+  total?: number;
+  pageSize?: number;
+};
+
+export default function ManageLeadsActions({ page, setPage, total, pageSize = 10 }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -54,30 +62,53 @@ export default function ManageLeadsActions() {
     });
 
   return (
-    <div className="mt-4 flex flex-wrap items-center gap-3">
-      <button
-        onClick={onFilter}
-        disabled={!!loading}
-        className="inline-flex items-center justify-center rounded bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
-      >
-        {loading === "filter" ? "Filtering..." : "Filter Leads"}
-      </button>
-      <button
-        onClick={onGenerateOffers}
-        disabled={!!loading}
-        className="inline-flex items-center justify-center rounded bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-      >
-        {loading === "offers" ? "Generating Offers..." : "Generate Offers"}
-      </button>
-      <button
-        onClick={onClear}
-        disabled={!!loading}
-        className="inline-flex items-center justify-center rounded bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
-      >
-        {loading === "clear" ? "Clearing..." : "Clear Leads"}
-      </button>
-      {message && <span className="text-sm text-gray-700 dark:text-gray-300">{message}</span>}
-      {error && <span className="text-sm text-red-600">{error}</span>}
+    <div className="mt-4 flex items-center gap-3">
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onFilter}
+          disabled={!!loading}
+          className="inline-flex items-center justify-center rounded bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+        >
+          {loading === "filter" ? "Filtering..." : "Filter Leads"}
+        </button>
+        <button
+          onClick={onGenerateOffers}
+          disabled={!!loading}
+          className="inline-flex items-center justify-center rounded bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+        >
+          {loading === "offers" ? "Generating Offers..." : "Generate Offers"}
+        </button>
+        <button
+          onClick={onClear}
+          disabled={!!loading}
+          className="inline-flex items-center justify-center rounded bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+        >
+          {loading === "clear" ? "Clearing..." : "Clear Leads"}
+        </button>
+        {message && <span className="text-sm text-gray-700 dark:text-gray-300">{message}</span>}
+        {error && <span className="text-sm text-red-600">{error}</span>}
+      </div>
+
+      {/* Pagination actions on the right, separated by space */}
+      {typeof page === "number" && typeof setPage === "function" && typeof total === "number" && (
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={() => setPage(Math.max(1, (page || 1) - 1))}
+            disabled={(page || 1) <= 1}
+            className="rounded px-3 py-1 bg-white border text-sm"
+          >
+            Prev
+          </button>
+          <div className="text-sm text-gray-600">Page {page} of {Math.max(1, Math.ceil((total || 0) / (pageSize || 1)))}</div>
+          <button
+            onClick={() => setPage((page || 1) + 1)}
+            disabled={(page || 1) * (pageSize || 1) >= (total || 0)}
+            className="rounded px-3 py-1 bg-white border text-sm"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }

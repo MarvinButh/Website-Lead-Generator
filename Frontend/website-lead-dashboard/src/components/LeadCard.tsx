@@ -16,9 +16,9 @@ type Lead = {
   contact?: string | null;
 };
 
-export default function LeadCard({ lead }: { lead: Lead }) {
+export default function LeadCard({ lead, noNavigate }: { lead: Lead; noNavigate?: boolean }) {
   const router = useRouter();
-  const { setSelectedLead } = useSelectedLead();
+  const { setSelectedLead, selectedLead } = useSelectedLead();
   const [updating, setUpdating] = React.useState<string | null>(null);
   const [interestedState, setInterestedState] = React.useState<boolean | null>(
     (lead as unknown as { interested?: boolean | null }).interested ?? null
@@ -26,9 +26,11 @@ export default function LeadCard({ lead }: { lead: Lead }) {
 
   const slug = slugify(lead.company_name);
 
+  const isSelected = selectedLead?.id === lead.id;
+
   const onClick = () => {
     setSelectedLead({ ...lead, slug });
-    router.push(`/lead/${slug}`);
+    if (!noNavigate) router.push(`/lead/${slug}`);
   };
 
   const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
@@ -43,7 +45,15 @@ export default function LeadCard({ lead }: { lead: Lead }) {
       });
       if (!res.ok) throw new Error(`Status ${res.status}`);
       const j = await res.json();
-      if (j.ok) setInterestedState(j.interested ?? null);
+      if (j.ok) {
+        setInterestedState(j.interested ?? null);
+        // Notify listeners (page) that a lead was updated so lists can update optimistically
+        try {
+          window.dispatchEvent(new CustomEvent("lead-updated", { detail: { id: lead.id, interested: j.interested ?? null } }));
+        } catch {
+          // ignore on non-browser envs
+        }
+      }
     } catch (_e) {
       // ignore
     } finally {
@@ -52,10 +62,22 @@ export default function LeadCard({ lead }: { lead: Lead }) {
   };
 
   return (
-    <button
-      type="button"
+    <div
+      id={`lead-${lead.id}`}
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className="text-left w-full rounded-lg border border-gray-200 dark:border-gray-800 p-4 bg-white dark:bg-gray-800 shadow-sm transition hover:shadow-md hover:border-gray-300 dark:hover:border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className={`text-left w-full rounded-lg border p-4 shadow-sm transition hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/40 cursor-pointer ${
+        isSelected
+          ? "border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-gray-800"
+          : "border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800"
+      }`}
     >
       <div className="font-medium truncate">{lead.company_name}</div>
       <div className="mt-1 text-sm text-gray-500 dark:text-gray-400 break-words">
@@ -94,6 +116,6 @@ export default function LeadCard({ lead }: { lead: Lead }) {
           </a>
         )}
       </div>
-    </button>
+    </div>
   );
 }

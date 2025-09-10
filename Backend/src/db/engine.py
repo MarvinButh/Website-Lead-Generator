@@ -1,6 +1,7 @@
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+import logging
 
 DB_HOST = os.getenv("DB_HOST", "db")
 DB_PORT = os.getenv("DB_PORT", "5432")
@@ -13,5 +14,20 @@ DATABASE_URL = os.getenv(
     f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 )
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+# Try to use the configured database (usually Postgres). If it is not reachable
+# fall back to a lightweight local SQLite DB so the API can still start in
+# development environments where Postgres isn't running.
+engine = None
+try:
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+    # attempt a quick connection to validate reachability
+    with engine.connect() as conn:  # type: ignore
+        pass
+    logging.info("Connected to primary database")
+except Exception as e:
+    logging.warning("Could not connect to primary DATABASE_URL (%s). Falling back to SQLite. Error: %s", DATABASE_URL, e)
+    SQLITE_URL = os.getenv("SQLITE_URL", "sqlite:///./dev.db")
+    # For SQLite we pass connect_args to allow usage from multiple threads (if needed)
+    engine = create_engine(SQLITE_URL, connect_args={"check_same_thread": False})
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
