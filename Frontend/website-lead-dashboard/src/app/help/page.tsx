@@ -1,0 +1,17 @@
+import SideBar from "@/components/SideBar";
+
+export default function HelpPage() {
+  return (
+    <div className="min-h-screen bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+      <div className="mx-auto flex max-w-7xl">
+        <SideBar />
+        <main className="flex-1 p-6">
+          <h1 className="text-3xl font-bold">Help</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-300">
+            Need assistance? Find FAQs and contact options here.
+          </p>
+        </main>
+      </div>
+    </div>
+  );
+}

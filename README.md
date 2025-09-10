@@ -15,6 +15,7 @@
 - templates/
   - docx/: Word template(s)
   - html/: HTML fragments/templates for summary pages
+  - tsx/: React components for the dashboard (e.g. LeadSummary.tsx)
   - <lang>/ cold_*_template.md: outreach templates (used by backend and frontend)
 
 ## Quick start
@@ -25,3 +26,7 @@
 
 ## Notes
 Do not create the Next.js app yet. This repo is prepared for it.
+
+## Frontend note (for later)
+- Use `templates/tsx/LeadSummary.tsx` in the Next.js app to render a lead card.
+- Pass in props with phone/email/website/city/industry/contact and the contents of `cold_email.md` and `cold_phone_call.md` for each lead.
