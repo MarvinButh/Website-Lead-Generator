@@ -97,7 +97,7 @@ export default function LeadSearchForm() {
     setError(null);
     setResult(null);
 
-    const payloadBody = { keywords, city, country_code: countryCode, use_overpass: useOverpass, auto_filter: autoFilter };
+    const payloadBody = { keywords, city, country_code: countryCode, use_overpass: useOverpass, autoFilter: autoFilter };
 
     // If service worker is available and active, hand off the job to the worker so it runs in background
     const swAvailable = !!(navigator.serviceWorker && (navigator.serviceWorker.controller || swRegistrationRef.current?.active));

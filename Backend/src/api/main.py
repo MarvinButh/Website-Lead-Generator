@@ -2,9 +2,10 @@ import os
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pathlib import Path
 import shutil
+import logging
 
 # Support both local and Docker imports
 try:
@@ -86,8 +87,11 @@ class GenerateLeadsIn(BaseModel):
     use_overpass: bool | None = None
     city: str | None = None
     country_code: str | None = None
-    # New: when true, run filtering pipeline after inserting leads
-    auto_filter: bool | None = None
+    # Prefer camelCase `autoFilter` (frontend) — still accept snake_case for backward compatibility
+    autoFilter: bool | None = Field(None, alias="auto_filter")
+
+    class Config:
+        allow_population_by_field_name = True
 
 
 @app.on_event("startup")
@@ -353,7 +357,19 @@ async def generate_leads(payload: GenerateLeadsIn):
                 tags = pipeline.OSM_TAGS.get(kw, [])
                 if not tags:
                     continue
-                all_rows.extend(pipeline.overpass_query_bbox(city, country_code, tags))
+                try:
+                    results = pipeline.overpass_query_bbox(city, country_code, tags)
+                    if results:
+                        all_rows.extend(results)
+                except Exception as e:
+                    # Log and continue on external HTTP errors (e.g. Nominatim 403) or other failures
+                    try:
+                        import logging
+                        logging.getLogger("uvicorn.error").warning(
+                            "Overpass/Nominatim error for keyword %s: %s", kw, e
+                        )
+                    except Exception:
+                        pass
 
         # Dedupe & score
         all_rows = pipeline.dedupe(all_rows)
@@ -382,8 +398,17 @@ async def generate_leads(payload: GenerateLeadsIn):
 
         # Optionally run filtering pipeline and generate offers
         filter_summary = None
-        if getattr(payload, "auto_filter", None):
-            filter_summary = _run_auto_filter_offers(overwrite=False)
+        # Respect either camelCase `autoFilter` (preferred) or legacy `auto_filter`
+        should_auto_filter = getattr(payload, "autoFilter", None) or getattr(payload, "auto_filter", None)
+        if should_auto_filter:
+            if filter_pipeline:
+                # full pipeline: filter rows and generate offers
+                filter_summary = _run_auto_filter_offers(overwrite=False)
+            else:
+                # No filter_pipeline available — at least prune DB using the simple filter
+                simple = _run_filter_only()
+                # Normalize keys to include offers_generated for client display
+                filter_summary = {"filtered": simple.get("filtered", 0), "removed": simple.get("removed", 0), "offers_generated": 0}
 
         resp = {
             "inserted": inserted,
