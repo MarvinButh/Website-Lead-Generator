@@ -124,3 +124,4 @@ Backend/data/*.xlsx
 # Docker
 volumes/
 scripts/migrate_from_files.py
+Backend/dev.db

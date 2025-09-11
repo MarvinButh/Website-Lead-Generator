@@ -457,7 +457,7 @@ async def generate_assets_for_slug(slug: str):
                     matched = None
                     for l in candidates:
                         try:
-                            if _slugify(l.company_name) == slug:
+                            if filter_pipeline and filter_pipeline.slugify(l.company_name) == slug:
                                 matched = l
                                 break
                         except Exception:
@@ -726,7 +726,7 @@ async def get_assets_summary(slug: str):
             candidates = session.query(Lead).filter(Lead.company_name != None).all()
             for l in candidates:
                 try:
-                    if _slugify(l.company_name) == slug:
+                    if filter_pipeline and filter_pipeline.slugify(l.company_name) == slug:
                         db_email = (l.email_script or "") if hasattr(l, 'email_script') else ""
                         db_phone = (l.phone_script or "") if hasattr(l, 'phone_script') else ""
                         db_ts = getattr(l, 'scripts_generated_at', None)
@@ -757,7 +757,7 @@ async def get_assets_summary(slug: str):
                     candidates = session.query(Lead).filter(Lead.company_name != None).all()
                     for l in candidates:
                         try:
-                            if _slugify(l.company_name) == slug:
+                            if filter_pipeline and filter_pipeline.slugify(l.company_name) == slug:
                                 db_email = (l.email_script or "") if hasattr(l, 'email_script') else ""
                                 db_phone = (l.phone_script or "") if hasattr(l, 'phone_script') else ""
                                 db_ts = getattr(l, 'scripts_generated_at', None)
