@@ -1,8 +1,12 @@
 import os
 from typing import List, Optional
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, root_validator
+try:
+    from pydantic import ConfigDict  # pydantic v2
+except Exception:
+    ConfigDict = None  # type: ignore
 from pathlib import Path
 import shutil
 import logging
@@ -63,6 +67,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Helper: parse truthy values from strings/bools
+def _is_truthy(val) -> bool:
+    if isinstance(val, bool):
+        return val
+    if val is None:
+        return False
+    try:
+        return str(val).strip().lower() in {"1", "true", "yes", "on"}
+    except Exception:
+        return False
+
+
+def _env_truthy(name: str, default: bool = False) -> bool:
+    val = os.getenv(name)
+    if val is None:
+        return default
+    return _is_truthy(val)
+
 
 class LeadOut(BaseModel):
     id: int
@@ -90,8 +112,20 @@ class GenerateLeadsIn(BaseModel):
     # Prefer camelCase `autoFilter` (frontend) — still accept snake_case for backward compatibility
     autoFilter: bool | None = Field(None, alias="auto_filter")
 
-    class Config:
-        allow_population_by_field_name = True
+    # pydantic v2: ensure we accept population by field name (camelCase)
+    if ConfigDict is not None:  # type: ignore[name-defined]
+        model_config = ConfigDict(populate_by_name=True)  # type: ignore[misc]
+
+    # Ensure we accept both `autoFilter` and `auto_filter` in incoming payloads
+    @root_validator(pre=True)
+    def _coalesce_auto_filter(cls, values):  # type: ignore[no-redef]
+        try:
+            if isinstance(values, dict):
+                if "autoFilter" not in values and "auto_filter" in values:
+                    values["autoFilter"] = values.get("auto_filter")
+        except Exception:
+            pass
+        return values
 
 
 @app.on_event("startup")
@@ -324,7 +358,7 @@ async def clear_leads():
 
 
 @app.post("/leads/generate")
-async def generate_leads(payload: GenerateLeadsIn):
+async def generate_leads(payload: GenerateLeadsIn, request: Request):
     # Resolve input/defaults
     if isinstance(payload.keywords, list):
         keywords = [s.strip() for s in payload.keywords if s and s.strip()]
@@ -332,10 +366,16 @@ async def generate_leads(payload: GenerateLeadsIn):
         kw_str = payload.keywords or os.getenv("KEYWORDS", "")
         keywords = [s.strip() for s in kw_str.split(",") if s.strip()]
 
-    use_places = payload.use_places if payload.use_places is not None else pipeline.USE_PLACES
-    use_overpass = payload.use_overpass if payload.use_overpass is not None else pipeline.USE_OVERPASS
-    city = payload.city or pipeline.CITY
-    country_code = payload.country_code or pipeline.COUNTRY_CODE
+    use_places = payload.use_places if payload.use_places is not None else bool(pipeline.USE_PLACES)
+    use_overpass = payload.use_overpass if payload.use_overpass is not None else bool(pipeline.USE_OVERPASS)
+    # Ensure robust defaults for location; prevent None reaching the pipeline
+    city = (payload.city or getattr(pipeline, "CITY", None) or os.getenv("CITY") or "Berlin")
+    country_code = (payload.country_code or getattr(pipeline, "COUNTRY_CODE", None) or os.getenv("COUNTRY_CODE") or "DE")
+    city = str(city).strip() if city is not None else "Berlin"
+    country_code = str(country_code).strip() if country_code is not None else "DE"
+    if not city or not country_code:
+        # Disable Overpass if we lack location context
+        use_overpass = False
 
     # Temporarily override pipeline module globals for this run
     # (keeps behavior consistent without refactor)
@@ -346,7 +386,7 @@ async def generate_leads(payload: GenerateLeadsIn):
         pipeline.COUNTRY_CODE = country_code
         pipeline.USE_PLACES = use_places
         pipeline.USE_OVERPASS = use_overpass
-
+        
         # Collect
         all_rows = []
         if use_places:
@@ -364,7 +404,6 @@ async def generate_leads(payload: GenerateLeadsIn):
                 except Exception as e:
                     # Log and continue on external HTTP errors (e.g. Nominatim 403) or other failures
                     try:
-                        import logging
                         logging.getLogger("uvicorn.error").warning(
                             "Overpass/Nominatim error for keyword %s: %s", kw, e
                         )
@@ -399,16 +438,37 @@ async def generate_leads(payload: GenerateLeadsIn):
         # Optionally run filtering pipeline and generate offers
         filter_summary = None
         # Respect either camelCase `autoFilter` (preferred) or legacy `auto_filter`
-        should_auto_filter = getattr(payload, "autoFilter", None) or getattr(payload, "auto_filter", None)
+        auto_val = getattr(payload, "autoFilter", None)
+        # Fall back to raw body if needed
+        if auto_val is None:
+            try:
+                raw_body = await request.json()
+                auto_val = raw_body.get("autoFilter", raw_body.get("auto_filter"))
+            except Exception:
+                pass
+        should_auto_filter = _is_truthy(auto_val) or (auto_val is None and _env_truthy("AUTO_FILTER", False))
+        try:
+            logging.getLogger("uvicorn.error").info("autoFilter resolved=%s (payload=%s)", should_auto_filter, auto_val)
+        except Exception:
+            pass
         if should_auto_filter:
+            # Always prune DB first so only low-website-quality leads remain
+            print("AUTOMATICALLY FILTERING " + str(len(all_rows)) + " LEADS")
+            simple = _run_filter_only()
+            offers_generated = 0
             if filter_pipeline:
-                # full pipeline: filter rows and generate offers
-                filter_summary = _run_auto_filter_offers(overwrite=False)
-            else:
-                # No filter_pipeline available — at least prune DB using the simple filter
-                simple = _run_filter_only()
-                # Normalize keys to include offers_generated for client display
-                filter_summary = {"filtered": simple.get("filtered", 0), "removed": simple.get("removed", 0), "offers_generated": 0}
+                # Then generate offers for all remaining leads
+                offer_res = _run_generate_offers_for_all(overwrite=False)
+                try:
+                    offers_generated = int(offer_res.get("offers_generated", 0)) if isinstance(offer_res, dict) else 0
+                except Exception:
+                    offers_generated = 0
+            # Provide a unified summary back to the client
+            filter_summary = {
+                "filtered": simple.get("filtered", 0),
+                "removed": simple.get("removed", 0),
+                "offers_generated": offers_generated,
+            }
 
         resp = {
             "inserted": inserted,
