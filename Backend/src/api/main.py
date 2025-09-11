@@ -11,6 +11,7 @@ from pathlib import Path
 import shutil
 import logging
 from sqlalchemy import text
+from sqlalchemy import inspect
 
 # Support both local and Docker imports
 try:
@@ -268,6 +269,24 @@ async def debug_db():
         except Exception:
             pass
     return info
+
+
+# Debug helper: create missing tables (safe to call in private deployments)
+@app.post("/debug/create_tables")
+async def debug_create_tables():
+    try:
+        Base.metadata.create_all(engine)
+        try:
+            tables = inspect(engine).get_table_names()
+        except Exception:
+            tables = []
+        return {"ok": True, "tables": tables}
+    except Exception as e:
+        try:
+            logging.getLogger("uvicorn.error").exception("Create tables failed: %s", e)
+        except Exception:
+            pass
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/leads/{lead_id}", response_model=LeadOut)
