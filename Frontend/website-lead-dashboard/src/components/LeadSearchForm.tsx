@@ -34,6 +34,11 @@ export default function LeadSearchForm() {
     ? (overrides.defaultUseOverpass ? 'overpass' : (googleAvailable ? 'google' : 'overpass'))
     : (envDefaultUseOverpass ? 'overpass' : (googleAvailable ? 'google' : 'overpass'));
 
+  // Resolve template language from settings (fallback to env or 'en')
+  const templateLang = (typeof overrides.templateLang === 'string' && overrides.templateLang.trim().length)
+    ? String(overrides.templateLang)
+    : (process.env.NEXT_PUBLIC_TEMPLATE_LANG || 'en');
+
   const [keywords, setKeywords] = useState<string>(typeof overrides.defaultKeywords === 'string' && overrides.defaultKeywords.length ? overrides.defaultKeywords : envDefaultKeywords);
   const [city, setCity] = useState<string>(typeof overrides.defaultCity === 'string' && overrides.defaultCity.length ? overrides.defaultCity : envDefaultCity);
   const [countryCode, setCountryCode] = useState<string>(typeof overrides.defaultCountryCode === 'string' && overrides.defaultCountryCode.length ? overrides.defaultCountryCode : envDefaultCountry);
@@ -127,7 +132,7 @@ export default function LeadSearchForm() {
     setError(null);
     setResult(null);
 
-    const payloadBody = { keywords, city, country_code: countryCode, use_overpass: (searchProvider === "overpass"), autoFilter: autoFilter };
+    const payloadBody = { keywords, city, country_code: countryCode, use_overpass: (searchProvider === "overpass"), autoFilter: autoFilter, templateLang };
 
     // If service worker is available and active, hand off the job to the worker so it runs in background
     const swAvailable = !!(navigator.serviceWorker && (navigator.serviceWorker.controller || swRegistrationRef.current?.active));

@@ -21,7 +21,7 @@ export default function GoogleKeyModal({ show, initialKey = "", onClose, onSave 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop covers the whole screen */}
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="absolute inset-0 bg-transparent drop-shadow transition-opacity duration-300" onClick={onClose} />
 
       {/* Modal content */}
       <div className="relative z-10 w-full max-w-lg rounded bg-white dark:bg-gray-800 p-6 shadow-lg mx-4">

@@ -111,6 +111,8 @@ class GenerateLeadsIn(BaseModel):
     country_code: str | None = None
     # Prefer camelCase `autoFilter` (frontend) — still accept snake_case for backward compatibility
     autoFilter: bool | None = Field(None, alias="auto_filter")
+    # New: template language from frontend settings (camelCase alias)
+    template_lang: str | None = Field(None, alias="templateLang")
 
     # pydantic v2: ensure we accept population by field name (camelCase)
     if ConfigDict is not None:  # type: ignore[name-defined]
@@ -381,11 +383,17 @@ async def generate_leads(payload: GenerateLeadsIn, request: Request):
     # (keeps behavior consistent without refactor)
     old_city, old_cc = pipeline.CITY, pipeline.COUNTRY_CODE
     old_up, old_uo = pipeline.USE_PLACES, pipeline.USE_OVERPASS
+    # New: temporarily override TEMPLATE_LANG env based on request
+    old_tpl_lang = os.getenv("TEMPLATE_LANG")
     try:
         pipeline.CITY = city
         pipeline.COUNTRY_CODE = country_code
         pipeline.USE_PLACES = use_places
         pipeline.USE_OVERPASS = use_overpass
+        
+        # If client provided a template language, apply for offer generation
+        if isinstance(payload.template_lang, str) and payload.template_lang.strip():
+            os.environ["TEMPLATE_LANG"] = payload.template_lang.strip()
         
         # Collect
         all_rows = []
@@ -486,5 +494,13 @@ async def generate_leads(payload: GenerateLeadsIn, request: Request):
         pipeline.COUNTRY_CODE = old_cc
         pipeline.USE_PLACES = old_up
         pipeline.USE_OVERPASS = old_uo
+        # Restore TEMPLATE_LANG env
+        if old_tpl_lang is None:
+            try:
+                del os.environ["TEMPLATE_LANG"]
+            except Exception:
+                pass
+        else:
+            os.environ["TEMPLATE_LANG"] = old_tpl_lang
 
 

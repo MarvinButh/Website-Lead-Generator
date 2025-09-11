@@ -1,18 +1,17 @@
 // Simple service worker to accept generate requests from the page and perform fetch in background.
 // It posts back results using postMessage.
 
-self.addEventListener('install', (event) => {
-  // activate immediately
-  // @ts-ignore
+self.addEventListener('install', () => {
+  // @ts-expect-error - self is a ServiceWorkerGlobalScope
   self.skipWaiting();
 });
 
-self.addEventListener('activate', (event) => {
-  // @ts-ignore
+self.addEventListener('activate', () => {
+  // @ts-expect-error - navigationPreload may not exist in all contexts
   if (self.registration && self.registration.navigationPreload) {
-    try { self.registration.navigationPreload.enable(); } catch (e) { }
+    try { self.registration.navigationPreload.enable(); } catch { }
   }
-  // @ts-ignore
+  // @ts-expect-error - self is a ServiceWorkerGlobalScope
   self.clients.claim();
 });
 

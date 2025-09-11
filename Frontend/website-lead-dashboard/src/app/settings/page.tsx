@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { readSettings, saveSettings, getGooglePlacesKeyFromSettings, STORAGE_KEY } from "../../lib/settings";
 
 // New, explicit shapes for stored settings
 type ApiKeys = {
@@ -34,8 +35,6 @@ type OutreachDefaults = {
   defaultTimeline: string;
   supportPeriod: string;
 };
-
-const STORAGE_KEY = "lead_settings_v2";
 
 export default function SettingsPage() {
   const [apiKeys, setApiKeys] = useState<ApiKeys>({
@@ -73,25 +72,59 @@ export default function SettingsPage() {
 
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
+  // Load settings using shared helpers
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed?.apiKeys) setApiKeys(parsed.apiKeys);
-        if (parsed?.overrides) setOverrides(parsed.overrides);
-        if (parsed?.outreach) setOutreach(parsed.outreach);
-        if (parsed?.savedAt) setSavedAt(parsed.savedAt);
-      }
+      const s = readSettings();
+      const storedPlaces = s.apiKeys?.googlePlaces || getGooglePlacesKeyFromSettings() || process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY || "";
+      const storedEmbed = ((s.apiKeys?.googleMapsEmbed as string | undefined) ?? process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY) || "";
+      setApiKeys({ googlePlaces: storedPlaces, googleMapsEmbed: String(storedEmbed || "") });
+
+      const o = (s.overrides || {}) as Record<string, unknown>;
+      setOverrides({
+        defaultKeywords: typeof o.defaultKeywords === "string" ? o.defaultKeywords : (process.env.NEXT_PUBLIC_DEFAULT_KEYWORDS || ""),
+        defaultCity: typeof o.defaultCity === "string" ? o.defaultCity : (process.env.NEXT_PUBLIC_DEFAULT_CITY || ""),
+        defaultCountryCode: typeof o.defaultCountryCode === "string" ? o.defaultCountryCode : (process.env.NEXT_PUBLIC_DEFAULT_COUNTRY_CODE || ""),
+        defaultUsePlaces: typeof o.defaultUsePlaces === "boolean" ? Boolean(o.defaultUsePlaces) : ((process.env.NEXT_PUBLIC_DEFAULT_USE_PLACES || "false").toLowerCase() === "true"),
+        defaultUseOverpass: typeof o.defaultUseOverpass === "boolean" ? Boolean(o.defaultUseOverpass) : ((process.env.NEXT_PUBLIC_DEFAULT_USE_OVERPASS || "false").toLowerCase() === "true"),
+        apiBase: typeof o.apiBase === "string" ? String(o.apiBase) : (process.env.NEXT_PUBLIC_API_BASE || ""),
+        frontendOrigin: typeof o.frontendOrigin === "string" ? String(o.frontendOrigin) : (process.env.NEXT_PUBLIC_FRONTEND_ORIGIN || ""),
+        templateLang: typeof o.templateLang === "string" ? String(o.templateLang) : (process.env.NEXT_PUBLIC_TEMPLATE_LANG || "en"),
+        language: typeof o.language === "string" ? String(o.language) : "en",
+      });
+
+      const out = (s.outreach || {}) as Record<string, unknown>;
+      setOutreach({
+        yourName: String(out.yourName || ""),
+        yourTitle: String(out.yourTitle || ""),
+        yourCompany: String(out.yourCompany || ""),
+        yourEmail: String(out.yourEmail || ""),
+        yourPhone: String(out.yourPhone || ""),
+        yourWebsite: String(out.yourWebsite || ""),
+        calendarLink: String(out.calendarLink || ""),
+        projectLink: String(out.projectLink || ""),
+        shortOutcome: String(out.shortOutcome || ""),
+        defaultPrice: String(out.defaultPrice || ""),
+        defaultPages: String(out.defaultPages || ""),
+        defaultTimeline: String(out.defaultTimeline || ""),
+        supportPeriod: String(out.supportPeriod || ""),
+      });
+
+      setSavedAt(s.savedAt || null);
     } catch (e) {
       console.error("Failed to load settings:", e);
     }
   }, []);
 
   function save() {
-    const payload = { apiKeys, overrides, outreach, savedAt: new Date().toISOString() };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    setSavedAt(new Date().toISOString());
+    const when = new Date().toISOString();
+    saveSettings({
+      apiKeys: apiKeys,
+      overrides: overrides as unknown as Record<string, unknown>,
+      outreach: outreach as unknown as Record<string, unknown>,
+      savedAt: when,
+    });
+    setSavedAt(when);
   }
 
   function resetToDefaults() {
@@ -122,20 +155,57 @@ export default function SettingsPage() {
       defaultTimeline: "",
       supportPeriod: "",
     });
-    localStorage.removeItem(STORAGE_KEY);
+
+    // Clear persisted settings so environment defaults are used until saved again
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    } catch {
+      // ignore
+    }
+
     setSavedAt(null);
   }
 
   function reloadFromStorage() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed?.apiKeys) setApiKeys(parsed.apiKeys);
-        if (parsed?.overrides) setOverrides(parsed.overrides);
-        if (parsed?.outreach) setOutreach(parsed.outreach);
-        if (parsed?.savedAt) setSavedAt(parsed.savedAt);
-      }
+      const s = readSettings();
+      const storedPlaces = s.apiKeys?.googlePlaces || getGooglePlacesKeyFromSettings() || "";
+      const storedEmbed = (s.apiKeys?.googleMapsEmbed as string | undefined) || "";
+      setApiKeys({ googlePlaces: storedPlaces, googleMapsEmbed: String(storedEmbed) });
+
+      const o = (s.overrides || {}) as Record<string, unknown>;
+      setOverrides({
+        defaultKeywords: String(o.defaultKeywords || ""),
+        defaultCity: String(o.defaultCity || ""),
+        defaultCountryCode: String(o.defaultCountryCode || ""),
+        defaultUsePlaces: Boolean(o.defaultUsePlaces ?? false),
+        defaultUseOverpass: Boolean(o.defaultUseOverpass ?? false),
+        apiBase: String(o.apiBase || ""),
+        frontendOrigin: String(o.frontendOrigin || ""),
+        templateLang: String(o.templateLang || "en"),
+        language: String(o.language || "en"),
+      });
+
+      const out = (s.outreach || {}) as Record<string, unknown>;
+      setOutreach({
+        yourName: String(out.yourName || ""),
+        yourTitle: String(out.yourTitle || ""),
+        yourCompany: String(out.yourCompany || ""),
+        yourEmail: String(out.yourEmail || ""),
+        yourPhone: String(out.yourPhone || ""),
+        yourWebsite: String(out.yourWebsite || ""),
+        calendarLink: String(out.calendarLink || ""),
+        projectLink: String(out.projectLink || ""),
+        shortOutcome: String(out.shortOutcome || ""),
+        defaultPrice: String(out.defaultPrice || ""),
+        defaultPages: String(out.defaultPages || ""),
+        defaultTimeline: String(out.defaultTimeline || ""),
+        supportPeriod: String(out.supportPeriod || ""),
+      });
+
+      setSavedAt(s.savedAt || null);
     } catch (e) {
       console.error(e);
     }
