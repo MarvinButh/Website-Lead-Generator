@@ -68,10 +68,10 @@ Run:
 
 # ---------------- Configuration ---------------- #
 
-# New: resolve paths relative to monorepo root (this file lives in Backend/)
-ROOT_DIR = Path(__file__).resolve().parents[1]
+# New: resolve paths relative to Backend root (this file lives in Backend/src/pipelines)
+ROOT_DIR = Path(__file__).resolve().parents[2]
 
-# Detect templates root (prefer env var or /templates in Docker, fallback to repo templates/)
+# Detect templates root (prefer env var or /templates in Docker, fallback to Backend/templates/)
 _TEMPLATES_DIR_ENV = os.getenv("TEMPLATES_DIR")
 if _TEMPLATES_DIR_ENV:
         TEMPLATES_ROOT = Path(_TEMPLATES_DIR_ENV)
@@ -83,9 +83,9 @@ else:
                 TEMPLATES_ROOT = ROOT_DIR / "templates"
 
 # Defaults now point to new locations
-DEFAULT_EXCEL = str(ROOT_DIR / "Backend" / "data" / "Leads-Auto-Ergebnis.xlsx")
+DEFAULT_EXCEL = str(ROOT_DIR / "data" / "Leads-Auto-Ergebnis.xlsx")
 DEFAULT_TEMPLATE = str(TEMPLATES_ROOT / "docx" / "Angebot-Webseitenservice.docx")
-DEFAULT_OUTPUT_DIR = str(ROOT_DIR / "Backend" / "offer-sheets")
+DEFAULT_OUTPUT_DIR = str(ROOT_DIR / "offer-sheets")
 
 WEBSITE_COLUMN_CANDIDATES = ["website", "webseite", "url"]
 
