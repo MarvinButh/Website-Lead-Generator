@@ -8,8 +8,14 @@ export const maxDuration = 60; // allow slower backend calls on free tiers
 // Set API_INTERNAL_BASE to the full backend base URL (e.g. https://your-backend.vercel.app/api)
 const BACKEND_BASE = process.env.API_INTERNAL_BASE || "http://localhost:8000";
 
-async function proxy(req: NextRequest, { params }: { params: { path: string[] } }) {
-  const path = Array.isArray(params.path) ? params.path.join("/") : String(params.path || "");
+type NextCtx = { params?: Promise<{ path: string[] } | undefined> | { path?: string[] } | undefined };
+
+async function proxy(req: NextRequest, context: NextCtx) {
+  // Next.js may provide context.params as a Promise in some versions/build environments.
+  // Awaiting works if it's a Promise or a plain object.
+  const resolved = await (context?.params ?? {} as { path?: string[] });
+  const pathParam = (resolved as { path?: string[] } | undefined)?.path;
+  const path = Array.isArray(pathParam) ? pathParam.join("/") : String(pathParam || "");
   const url = new URL(req.url);
   const target = `${BACKEND_BASE.replace(/\/$/, "")}/${path}${url.search}`;
 
