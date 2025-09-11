@@ -29,8 +29,13 @@ async function proxy(req: NextRequest, context: NextCtx) {
     cache: "no-store",
   };
 
+  // If the request has a body (non-GET/HEAD), read it fully as an ArrayBuffer.
+  // Passing a ReadableStream directly to fetch in the Node runtime requires
+  // the non-standard `duplex` option which is not available in all runtimes
+  // and triggers: "RequestInit: duplex option is required when sending a body.".
   if (["GET", "HEAD"].includes(req.method) === false) {
-    init.body = req.body ? req.body : await req.clone().arrayBuffer();
+    const ab = await req.arrayBuffer();
+    init.body = ab && ab.byteLength ? ab : undefined;
   }
 
   const res = await fetch(target, init);
