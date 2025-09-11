@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text
 from sqlalchemy.orm import declarative_base
 from datetime import datetime
 
@@ -17,6 +17,10 @@ class Lead(Base):
     contact = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     interested = Column(Boolean, nullable=True)
+    # New: store generated outreach scripts directly in DB for serverless deployments
+    email_script = Column(Text, nullable=True)
+    phone_script = Column(Text, nullable=True)
+    scripts_generated_at = Column(DateTime, nullable=True)
 
     def __repr__(self):
         return (

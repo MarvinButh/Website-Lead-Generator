@@ -12,6 +12,9 @@ import shutil
 import logging
 from sqlalchemy import text
 from sqlalchemy import inspect
+from datetime import datetime
+import re
+import unicodedata
 
 # Support both local and Docker imports
 try:
@@ -424,6 +427,57 @@ async def generate_assets_for_slug(slug: str):
             output_root=output_root,
             overwrite=False,
         )
+
+        # After generation, try to read generated scripts and persist them into the DB
+        def _read_text(p: Path) -> Optional[str]:
+            try:
+                return p.read_text(encoding="utf-8")
+            except Exception:
+                return None
+
+        # locate the generated directory (case-insensitive)
+        target_dir = output_root / slug.lower()
+        if not target_dir.exists() or not target_dir.is_dir():
+            try:
+                for entry in output_root.iterdir():
+                    if entry.is_dir() and entry.name.lower() == slug.lower():
+                        target_dir = entry
+                        break
+            except Exception:
+                pass
+
+        email_script = _read_text(target_dir / "cold_email.md") or ""
+        phone_script = _read_text(target_dir / "cold_phone_call.md") or ""
+
+        if email_script or phone_script:
+            try:
+                with SessionLocal() as session:
+                    # Find matching Lead by slugifying company_name
+                    candidates = session.query(Lead).filter(Lead.company_name != None).all()
+                    matched = None
+                    for l in candidates:
+                        try:
+                            if _slugify(l.company_name) == slug:
+                                matched = l
+                                break
+                        except Exception:
+                            continue
+                    if matched:
+                        # only set if non-empty to avoid clobbering blanks
+                        if email_script:
+                            matched.email_script = email_script
+                        if phone_script:
+                            matched.phone_script = phone_script
+                        matched.scripts_generated_at = datetime.utcnow()
+                        session.add(matched)
+                        session.commit()
+            except Exception:
+                # Don't fail the entire endpoint if DB write fails
+                try:
+                    logging.getLogger("uvicorn.error").exception("Failed to persist scripts for slug %s", slug)
+                except Exception:
+                    pass
+
         return {"ok": True}
     except Exception:
         return {"ok": False}
@@ -650,6 +704,7 @@ async def get_assets_summary(slug: str):
                     break
         except Exception:
             pass
+
     def _read_text(p: Path) -> Optional[str]:
         try:
             return p.read_text(encoding="utf-8")
@@ -661,17 +716,61 @@ async def get_assets_summary(slug: str):
             return json.loads(p.read_text(encoding="utf-8"))
         except Exception:
             return None
-    meta = _read_json(target / "metadata.json")
-    email_script = _read_text(target / "cold_email.md") or ""
-    phone_script = _read_text(target / "cold_phone_call.md") or ""
 
-    if (meta is None) and filter_pipeline:
+    # First: attempt to fetch scripts from DB (preferred for serverless envs)
+    db_email = ""
+    db_phone = ""
+    db_ts = None
+    try:
+        with SessionLocal() as session:
+            candidates = session.query(Lead).filter(Lead.company_name != None).all()
+            for l in candidates:
+                try:
+                    if _slugify(l.company_name) == slug:
+                        db_email = (l.email_script or "") if hasattr(l, 'email_script') else ""
+                        db_phone = (l.phone_script or "") if hasattr(l, 'phone_script') else ""
+                        db_ts = getattr(l, 'scripts_generated_at', None)
+                        break
+                except Exception:
+                    continue
+    except Exception:
+        pass
+
+    meta = _read_json(target / "metadata.json")
+    file_email = _read_text(target / "cold_email.md") or ""
+    file_phone = _read_text(target / "cold_phone_call.md") or ""
+
+    # Prefer DB scripts when present (non-empty), otherwise fall back to filesystem
+    email_script = db_email or file_email or ""
+    phone_script = db_phone or file_phone or ""
+
+    # If metadata is missing OR both scripts are missing, attempt generation once
+    if filter_pipeline and (meta is None or (not email_script and not phone_script)):
         # Try to generate once
         try:
             await generate_assets_for_slug(slug)  # type: ignore
             meta = _read_json(target / "metadata.json")
-            email_script = _read_text(target / "cold_email.md") or email_script
-            phone_script = _read_text(target / "cold_phone_call.md") or phone_script
+
+            # after generation we re-check DB first, then files
+            try:
+                with SessionLocal() as session:
+                    candidates = session.query(Lead).filter(Lead.company_name != None).all()
+                    for l in candidates:
+                        try:
+                            if _slugify(l.company_name) == slug:
+                                db_email = (l.email_script or "") if hasattr(l, 'email_script') else ""
+                                db_phone = (l.phone_script or "") if hasattr(l, 'phone_script') else ""
+                                db_ts = getattr(l, 'scripts_generated_at', None)
+                                break
+                        except Exception:
+                            continue
+            except Exception:
+                pass
+
+            file_email = _read_text(target / "cold_email.md") or file_email
+            file_phone = _read_text(target / "cold_phone_call.md") or file_phone
+            email_script = db_email or file_email or email_script
+            phone_script = db_phone or file_phone or phone_script
         except Exception:
             pass
 
@@ -680,6 +779,7 @@ async def get_assets_summary(slug: str):
         "meta": meta,
         "emailScript": email_script,
         "phoneScript": phone_script,
+        "scriptsGeneratedAt": (db_ts.isoformat() if db_ts is not None else None),
     }
 
 
