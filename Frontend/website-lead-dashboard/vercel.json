@@ -1,9 +1,0 @@
-{
-  "functions": {
-    "api/backend/**": {
-      "maxDuration": 60,
-      "memory": 1024,
-      "runtime": "nodejs20.x"
-    }
-  }
-}
