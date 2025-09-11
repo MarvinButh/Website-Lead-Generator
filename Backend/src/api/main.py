@@ -449,19 +449,46 @@ async def generate_assets_for_slug(slug: str):
         email_script = _read_text(target_dir / "cold_email.md") or ""
         phone_script = _read_text(target_dir / "cold_phone_call.md") or ""
 
+        # Diagnostics logging for troubleshooting persistence
+        try:
+            logging.getLogger("uvicorn.error").debug("Assets target_dir=%s", str(target_dir))
+            logging.getLogger("uvicorn.error").debug("Read email_script length=%d, phone_script length=%d", len(email_script), len(phone_script))
+        except Exception:
+            pass
+
+        persisted = False
+        
         if email_script or phone_script:
             try:
                 with SessionLocal() as session:
-                    # Find matching Lead by slugifying company_name
+                    # Find matching Lead by slugifying company_name (fallback to exact company_name match)
                     candidates = session.query(Lead).filter(Lead.company_name != None).all()
                     matched = None
                     for l in candidates:
                         try:
+                            # log candidate comparison
+                            try:
+                                logging.getLogger("uvicorn.error").debug("Checking candidate id=%s name=%s", getattr(l, 'id', None), getattr(l, 'company_name', None))
+                            except Exception:
+                                pass
                             if filter_pipeline and filter_pipeline.slugify(l.company_name) == slug:
+                                matched = l
+                                break
+                            # Fallback: direct case-insensitive company name match against source row if available
+                            try:
+                                source_name = str(target_row.get(company_col, "") or "").strip().lower()
+                            except Exception:
+                                source_name = ""
+                            if source_name and isinstance(l.company_name, str) and l.company_name.strip().lower() == source_name:
                                 matched = l
                                 break
                         except Exception:
                             continue
+                    if not matched:
+                        try:
+                            logging.getLogger("uvicorn.error").debug("No DB lead matched for slug %s (checked %d candidates)", slug, len(candidates))
+                        except Exception:
+                            pass
                     if matched:
                         # only set if non-empty to avoid clobbering blanks
                         if email_script:
@@ -471,6 +498,7 @@ async def generate_assets_for_slug(slug: str):
                         matched.scripts_generated_at = datetime.utcnow()
                         session.add(matched)
                         session.commit()
+                        persisted = True
             except Exception:
                 # Don't fail the entire endpoint if DB write fails
                 try:
@@ -478,7 +506,7 @@ async def generate_assets_for_slug(slug: str):
                 except Exception:
                     pass
 
-        return {"ok": True}
+        return {"ok": True, "persisted": persisted, "email_len": len(email_script), "phone_len": len(phone_script), "target_dir": str(target_dir)}
     except Exception:
         return {"ok": False}
 
