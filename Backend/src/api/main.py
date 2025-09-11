@@ -28,13 +28,18 @@ except Exception:
 
 # Import pipeline helpers
 try:
-    import lead_auto_pipeline_de as pipeline
+    # prefer package-style import when running from src/ layout
+    from src import lead_auto_pipeline_de as pipeline
 except Exception:
-    from Backend import lead_auto_pipeline_de as pipeline  # type: ignore
+    try:
+        # fallback when running from repository root where Backend/ is top-level
+        from Backend import lead_auto_pipeline_de as pipeline  # type: ignore
+    except Exception:
+        pipeline = None  # type: ignore
 
 # New: optional filter pipeline to auto-generate offers for low-website-quality leads
 try:
-    import lead_filter_pipeline as filter_pipeline  # type: ignore
+    from src import lead_filter_pipeline as filter_pipeline
 except Exception:
     try:
         from Backend import lead_filter_pipeline as filter_pipeline  # type: ignore
@@ -809,5 +814,29 @@ async def get_assets_summary(slug: str):
         "phoneScript": phone_script,
         "scriptsGeneratedAt": (db_ts.isoformat() if db_ts is not None else None),
     }
+
+
+# Debug endpoint: report whether filter pipeline is available (helps diagnose Vercel deploys)
+@app.get("/debug/filter_pipeline")
+async def debug_filter_pipeline():
+    info = {
+        "filter_pipeline_present": bool(filter_pipeline),
+        "pipeline_present": bool(pipeline),
+    }
+    try:
+        if filter_pipeline is not None:
+            info["filter_pipeline_default_output_dir"] = getattr(filter_pipeline, "DEFAULT_OUTPUT_DIR", None)
+            info["filter_pipeline_default_template"] = getattr(filter_pipeline, "DEFAULT_TEMPLATE", None)
+    except Exception:
+        pass
+    try:
+        # Include a short probe of importability: attempt to access slugify if present
+        if filter_pipeline is not None and hasattr(filter_pipeline, "slugify"):
+            info["has_slugify"] = True
+        else:
+            info["has_slugify"] = False
+    except Exception:
+        info["has_slugify"] = False
+    return info
 
 
