@@ -18,6 +18,7 @@ except (ImportError, AttributeError) as exc:
         "and uninstall any conflicting 'docx' package via 'pip uninstall docx'."
     ) from exc
 from unidecode import unidecode
+import requests  # NEW: to fetch remote template if needed
 
 # --- Optional DB imports (work in local and Docker) ---
 try:
@@ -594,15 +595,38 @@ def generate_offer(
         placeholders = build_placeholder_map(row)
         enrich_placeholders_with_env_and_aliases(placeholders, row, company_name)
 
+        # Resolve template path: if missing locally and DOCX_TEMPLATE_URL is provided, download to /tmp
+        resolved_template = template_path
+        try:
+                if not resolved_template.exists():
+                        tpl_url = os.getenv("DOCX_TEMPLATE_URL", "").strip()
+                        if tpl_url:
+                                try:
+                                        tmp_target = Path("/tmp/Angebot-Webseitenservice.docx")
+                                        resp = requests.get(tpl_url, timeout=20)
+                                        if resp.status_code == 200:
+                                                tmp_target.write_bytes(resp.content)
+                                                resolved_template = tmp_target
+                                                logging.info(f"Downloaded DOCX template from {tpl_url} -> {tmp_target}")
+                                        else:
+                                                logging.warning(f"Failed to download DOCX template (status {resp.status_code}) from {tpl_url}")
+                                except Exception as e:
+                                        logging.warning(f"Error downloading DOCX template from {tpl_url}: {e}")
+        except Exception:
+                pass
+
         # Generate or skip DOCX based on overwrite flag
         if output_doc.exists() and not overwrite:
                 logging.info(f"Skipping existing offer DOCX for {company_name} ({output_doc})")
         else:
                 try:
-                        doc = Document(str(template_path))
-                        replace_placeholders_in_doc(doc, placeholders)
-                        doc.save(str(output_doc))
-                        logging.debug(f"Saved offer: {output_doc}")
+                        if resolved_template.exists():
+                                doc = Document(str(resolved_template))
+                                replace_placeholders_in_doc(doc, placeholders)
+                                doc.save(str(output_doc))
+                                logging.debug(f"Saved offer: {output_doc}")
+                        else:
+                                logging.debug(f"DOCX template not found at {template_path}; skipping DOCX generation for {company_name}")
                 except Exception as e:
                         logging.error(f"Failed to generate DOCX for {company_name}: {e}")
 

@@ -1,6 +1,3 @@
-import path from "node:path";
-import { promises as fs } from "node:fs";
-import SideBar from "@/components/SideBar";
 import ClientLeadSummary from "@/components/ClientLeadSummary";
 
 export const dynamic = "force-dynamic";
@@ -9,69 +6,38 @@ type PageProps = {
   params: { slug: string };
 };
 
+type AssetSummary = {
+  ok: boolean;
+  meta: Record<string, unknown> | null;
+  emailScript: string;
+  phoneScript: string;
+};
+
 export default async function LeadPage({ params }: PageProps) {
   const { slug } = await params;
 
-  // Allow override via env for Docker/prod; default to monorepo path
-  const offersRoot = process.env.OFFER_SHEETS_DIR || path.resolve(process.cwd(), "../../Backend/offer-sheets");
+  // Prefer internal base for server-to-server calls on Vercel. Fallback to proxy base.
+  const base = process.env.API_INTERNAL_BASE || process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
 
-  const resolveBaseDir = async (): Promise<string> => {
-    const lc = slug.toLowerCase();
-    const direct = path.join(offersRoot, lc);
-    try {
-      await fs.access(direct);
-      return direct;
-    } catch {}
-    // Fallback: scan for a directory whose lowercased name matches the slug (covers older generations)
-    try {
-      const entries = await fs.readdir(offersRoot, { withFileTypes: true });
-      for (const ent of entries) {
-        if (ent.isDirectory() && ent.name.toLowerCase() === lc) {
-          const candidate = path.join(offersRoot, ent.name);
-          try {
-            await fs.access(candidate);
-            return candidate;
-          } catch {}
-        }
+  // Ask backend for a summary of generated assets; backend will attempt generation if missing
+  let meta: Record<string, unknown> | null = null;
+  let emailScript = "";
+  let phoneScript = "";
+  try {
+    const res = await fetch(`${base.replace(/\/$/, "")}/assets/${slug}/summary`, { cache: "no-store" });
+    if (res.ok) {
+      const j = (await res.json()) as AssetSummary;
+      if (j && typeof j === "object") {
+        meta = (j.meta as Record<string, unknown> | null) ?? null;
+        emailScript = j.emailScript || "";
+        phoneScript = j.phoneScript || "";
       }
-    } catch {}
-    return direct; // default path (may not exist yet)
-  };
-
-  let baseDir = await resolveBaseDir();
-
-  const readAssets = async (dir: string) => {
-    const [metaRaw, emailScriptRaw, phoneScriptRaw] = await Promise.all([
-      fs.readFile(path.join(dir, "metadata.json"), "utf-8").catch(() => null),
-      fs.readFile(path.join(dir, "cold_email.md"), "utf-8").catch(() => ""),
-      fs.readFile(path.join(dir, "cold_phone_call.md"), "utf-8").catch(() => ""),
-    ]);
-    return { metaRaw, emailScriptRaw, phoneScriptRaw } as const;
-  };
-
-  let { metaRaw, emailScriptRaw, phoneScriptRaw } = await readAssets(baseDir);
-
-  // Trigger generation if metadata is missing OR both scripts missing
-  if (!metaRaw || (!emailScriptRaw && !phoneScriptRaw)) {
-    try {
-      const base = process.env.API_INTERNAL_BASE || process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
-      await fetch(`${base}/leads/${slug}/generate-assets`, { method: "POST", cache: "no-store" });
-      // Re-resolve baseDir in case a new lowercase directory was created
-      baseDir = await resolveBaseDir();
-      // Retry read after generation
-      const res2 = await readAssets(baseDir);
-      metaRaw = res2.metaRaw;
-      emailScriptRaw = res2.emailScriptRaw;
-      phoneScriptRaw = res2.phoneScriptRaw;
-    } catch {
-      // ignore
-      console.log("Error generating assets");
     }
+  } catch {
+    // ignore
   }
 
-  const meta = metaRaw ? JSON.parse(metaRaw) : null;
-
-  const placeholders: Record<string, string> = meta?.placeholders ?? {};
+  const placeholders: Record<string, string> = (meta?.placeholders as Record<string, string> | undefined) ?? {};
   const normalize = (s: string) => s.toLowerCase().replace(/[{}\[\]\s_]/g, "");
   const pick = (keys: string[]) => {
     const wanted = new Set(keys.map(normalize));
@@ -81,7 +47,7 @@ export default async function LeadPage({ params }: PageProps) {
     return undefined;
   };
 
-  const businessName: string = meta?.company ?? pick(["businessname", "firmenname"]) ?? slug;
+  const businessName: string = (meta?.company as string | undefined) ?? pick(["businessname", "firmenname"]) ?? slug;
   let phone = pick(["phone", "telefon"]);
   let email = pick(["email", "e-mail", "e_mail"]);
   let website = pick(["website", "webseite", "url"]);
@@ -126,8 +92,8 @@ export default async function LeadPage({ params }: PageProps) {
               industry,
               contact,
               interested: null,
-              emailScript: emailScriptRaw || undefined,
-              phoneScript: phoneScriptRaw || undefined,
+              emailScript: emailScript || undefined,
+              phoneScript: phoneScript || undefined,
               generatedAt,
             }}
           />

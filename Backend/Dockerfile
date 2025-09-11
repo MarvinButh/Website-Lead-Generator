@@ -17,4 +17,9 @@ COPY . /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-CMD ["python", "lead_filter_pipeline.py"]
+# Default port for local dev; Vercel/other platforms will provide $PORT
+ENV PORT=8000
+EXPOSE 8000
+
+# Run the FastAPI server (bind to 0.0.0.0 and dynamic $PORT for platforms like Vercel)
+CMD ["/bin/sh", "-lc", "uvicorn src.api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

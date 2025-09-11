@@ -26,7 +26,9 @@ try:
     logging.info("Connected to primary database")
 except Exception as e:
     logging.warning("Could not connect to primary DATABASE_URL (%s). Falling back to SQLite. Error: %s", DATABASE_URL, e)
-    SQLITE_URL = os.getenv("SQLITE_URL", "sqlite:///./dev.db")
+    # On Vercel, writeable path is /tmp
+    default_sqlite = "sqlite:////tmp/dev.db" if os.getenv("VERCEL") else "sqlite:///./dev.db"
+    SQLITE_URL = os.getenv("SQLITE_URL", default_sqlite)
     # For SQLite we pass connect_args to allow usage from multiple threads (if needed)
     engine = create_engine(SQLITE_URL, connect_args={"check_same_thread": False})
 

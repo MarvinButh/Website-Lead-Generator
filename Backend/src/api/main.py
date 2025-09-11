@@ -252,6 +252,9 @@ def _get_offers_root() -> Path:
     env_dir = os.getenv("OFFERS_DIR") or os.getenv("OFFER_SHEETS_DIR")
     if env_dir:
         return Path(env_dir)
+    # On Vercel, the filesystem is read-only except for /tmp
+    if os.getenv("VERCEL") == "1" or os.getenv("VERCEL", "").lower() in {"true", "yes"}:
+        return Path("/tmp/offer-sheets")
     if filter_pipeline is not None:
         return Path(getattr(filter_pipeline, "DEFAULT_OUTPUT_DIR", "Backend/offer-sheets"))
     return Path("Backend/offer-sheets")
@@ -563,5 +566,52 @@ async def generate_leads(payload: GenerateLeadsIn, request: Request):
             _restore_env(outreach_prev_env)
         except Exception:
             pass
+
+
+# New: serve a summary of generated assets for a given slug. If missing, try to generate once.
+@app.get("/assets/{slug}/summary")
+async def get_assets_summary(slug: str):
+    root = _get_offers_root()
+    # Try lowercase dir first, then scan for case-insensitive match
+    target = root / slug.lower()
+    if not target.exists() or not target.is_dir():
+        try:
+            for entry in root.iterdir():
+                if entry.is_dir() and entry.name.lower() == slug.lower():
+                    target = entry
+                    break
+        except Exception:
+            pass
+    def _read_text(p: Path) -> Optional[str]:
+        try:
+            return p.read_text(encoding="utf-8")
+        except Exception:
+            return None
+    def _read_json(p: Path) -> Optional[dict]:
+        try:
+            import json
+            return json.loads(p.read_text(encoding="utf-8"))
+        except Exception:
+            return None
+    meta = _read_json(target / "metadata.json")
+    email_script = _read_text(target / "cold_email.md") or ""
+    phone_script = _read_text(target / "cold_phone_call.md") or ""
+
+    if (meta is None) and filter_pipeline:
+        # Try to generate once
+        try:
+            await generate_assets_for_slug(slug)  # type: ignore
+            meta = _read_json(target / "metadata.json")
+            email_script = _read_text(target / "cold_email.md") or email_script
+            phone_script = _read_text(target / "cold_phone_call.md") or phone_script
+        except Exception:
+            pass
+
+    return {
+        "ok": bool(meta is not None or email_script or phone_script),
+        "meta": meta,
+        "emailScript": email_script,
+        "phoneScript": phone_script,
+    }
 
 
