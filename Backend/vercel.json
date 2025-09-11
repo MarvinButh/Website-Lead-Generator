@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "functions": {
+    "src/api/**/*.py": {
+      "includeFiles": "templates/**"
+    }
+  },
+  "env": {
+    "TLD_CACHE_DIR": "/tmp/tldextract"
+  }
+}
