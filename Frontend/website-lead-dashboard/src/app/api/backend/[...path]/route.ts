@@ -40,7 +40,7 @@ async function proxy(req: NextRequest, context: NextCtx) {
 
   const res = await fetch(target, init);
   const resHeaders = new Headers(res.headers);
-  ["content-length", "transfer-encoding", "connection"].forEach((h) => resHeaders.delete(h));
+  ["content-length", "transfer-encoding", "connection", "content-encoding"].forEach((h) => resHeaders.delete(h));
 
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers: resHeaders });
 }
