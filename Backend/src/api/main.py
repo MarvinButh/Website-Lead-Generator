@@ -203,22 +203,64 @@ async def list_leads(page: int = 1, page_size: int = 250, q: Optional[str] = Non
     page_size = max(1, min(1000, int(page_size)))
     offset = (page - 1) * page_size
 
-    with SessionLocal() as session:
-        query = session.query(Lead)
-        if q:
-            term = f"%{q}%"
-            # search across common text fields
-            query = query.filter(
-                (Lead.company_name.ilike(term)) |
-                (Lead.city.ilike(term)) |
-                (Lead.industry.ilike(term)) |
-                (Lead.email.ilike(term)) |
-                (Lead.phone.ilike(term))
-            )
-        total = query.count()
-        rows = query.order_by(Lead.id.desc()).offset(offset).limit(page_size).all()
-        items = [r for r in rows]
-        return {"items": items, "total": total}
+    try:
+        with SessionLocal() as session:
+            query = session.query(Lead)
+            if q:
+                term = f"%{q}%"
+                # search across common text fields
+                query = query.filter(
+                    (Lead.company_name.ilike(term)) |
+                    (Lead.city.ilike(term)) |
+                    (Lead.industry.ilike(term)) |
+                    (Lead.email.ilike(term)) |
+                    (Lead.phone.ilike(term))
+                )
+            total = query.count()
+            rows = query.order_by(Lead.id.desc()).offset(offset).limit(page_size).all()
+            items = [r for r in rows]
+            return {"items": items, "total": total}
+    except Exception as e:
+        # Log full traceback for server logs and return a generic 500 to the client
+        try:
+            logging.getLogger("uvicorn.error").exception("Error in /leads: %s", e)
+        except Exception:
+            pass
+        raise HTTPException(status_code=500, detail="internal server error")
+
+
+# Debug endpoint to test database connectivity and engine type. Use carefully in private deployments.
+@app.get("/debug/db")
+async def debug_db():
+    info = {"engine_present": bool(engine)}
+    try:
+        # Detect if using SQLite (file path) vs Postgres
+        url = str(getattr(engine, "url", "")) if engine is not None else ""
+        info["engine_url_preview"] = (url[:200] + "...") if url else ""
+        # Try a simple connection and quick query
+        with engine.connect() as conn:  # type: ignore
+            try:
+                # run a lightweight check depending on dialect
+                dialect = getattr(engine, "dialect", None)
+                info["dialect"] = getattr(dialect, "name", None)
+            except Exception:
+                pass
+            try:
+                res = conn.execute("SELECT 1")  # type: ignore
+                info["connection_ok"] = True
+            except Exception as e:
+                info["connection_ok"] = False
+                try:
+                    logging.getLogger("uvicorn.error").exception("DB probe failed: %s", e)
+                except Exception:
+                    pass
+    except Exception as e:
+        info["error"] = str(e)
+        try:
+            logging.getLogger("uvicorn.error").exception("Error in /debug/db: %s", e)
+        except Exception:
+            pass
+    return info
 
 
 @app.get("/leads/{lead_id}", response_model=LeadOut)
