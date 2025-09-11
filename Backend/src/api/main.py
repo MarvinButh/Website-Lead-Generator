@@ -10,6 +10,7 @@ except Exception:
 from pathlib import Path
 import shutil
 import logging
+from sqlalchemy import text
 
 # Support both local and Docker imports
 try:
@@ -147,8 +148,7 @@ class LeadOut(BaseModel):
     interested: bool | None = None
 
     class Config:
-        orm_mode = True
-        # Keep pydantic v2 compatibility flag if available
+        # Keep pydantic v2 compatibility flag
         from_attributes = True
 
 
@@ -254,6 +254,13 @@ async def debug_db():
                     logging.getLogger("uvicorn.error").exception("DB probe failed: %s", e)
                 except Exception:
                     pass
+            # Use SQLAlchemy text() for raw SQL to avoid ObjectNotExecutableError
+            try:
+                conn.execute(text("SELECT 1"))  # type: ignore
+                info["connection_ok"] = True
+            except Exception:
+                # If this also fails, connection_ok remains False and original exception logged above
+                pass
     except Exception as e:
         info["error"] = str(e)
         try:

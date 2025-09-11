@@ -2,6 +2,7 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import logging
+import urllib.parse
 
 DB_HOST = os.getenv("DB_HOST", "db")
 DB_PORT = os.getenv("DB_PORT", "5432")
@@ -19,7 +20,32 @@ DATABASE_URL = os.getenv(
 # development environments where Postgres isn't running.
 engine = None
 try:
-    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+    def _prepare_db_url(url: str) -> str:
+        """Ensure the URL uses psycopg2 driver and has sslmode for Postgres providers like Neon."""
+        if not url:
+            return url
+        u = url.strip()
+        # Normalize short postgres scheme to include psycopg2 driver
+        if u.startswith("postgres://"):
+            u = u.replace("postgres://", "postgresql+psycopg2://", 1)
+        elif u.startswith("postgresql://") and "+psycopg2" not in u:
+            u = u.replace("postgresql://", "postgresql+psycopg2://", 1)
+        # If Postgres URL has no sslmode, append sslmode=require (Neon requires SSL)
+        parsed = urllib.parse.urlparse(u)
+        if parsed.scheme and parsed.scheme.startswith("postgres") and "sslmode=" not in u:
+            if "?" in u:
+                u = u + "&sslmode=require"
+            else:
+                u = u + "?sslmode=require"
+        return u
+
+    final_url = _prepare_db_url(DATABASE_URL)
+    # For Postgres/Neon explicitly pass sslmode in connect_args to help some environments
+    connect_args = {}
+    if final_url and final_url.startswith("postgres"):
+        connect_args = {"sslmode": "require"}
+
+    engine = create_engine(final_url, pool_pre_ping=True, connect_args=connect_args)
     # attempt a quick connection to validate reachability
     with engine.connect() as conn:  # type: ignore
         pass
