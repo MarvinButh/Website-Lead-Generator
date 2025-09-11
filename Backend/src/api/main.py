@@ -34,21 +34,21 @@ except Exception:
 # Import pipeline helpers
 try:
     # prefer package-style import when running from src/ layout
-    from src import lead_auto_pipeline_de as pipeline
+    from src.pipelines import lead_auto_pipeline_de as pipeline
 except Exception as e:
     try:
         # fallback when running from repository root where Backend/ is top-level
-        from Backend import lead_auto_pipeline_de as pipeline  # type: ignore
+        from Backend.src import lead_auto_pipeline_de as pipeline  # type: ignore
     except Exception as e2:
         pipeline = None  # type: ignore
         pipeline_import_error = (str(e2) or str(e) or "unknown error") + "\n" + traceback.format_exc()
 
 # New: optional filter pipeline to auto-generate offers for low-website-quality leads
 try:
-    from src import lead_filter_pipeline as filter_pipeline
+    from src.pipelines import lead_filter_pipeline as filter_pipeline
 except Exception as e:
     try:
-        from Backend import lead_filter_pipeline as filter_pipeline  # type: ignore
+        from Backend.src import lead_filter_pipeline as filter_pipeline  # type: ignore
     except Exception as e2:
         filter_pipeline = None  # type: ignore
         filter_pipeline_import_error = (str(e2) or str(e) or "unknown error") + "\n" + traceback.format_exc()
