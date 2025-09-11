@@ -15,6 +15,11 @@ from sqlalchemy import inspect
 from datetime import datetime
 import re
 import unicodedata
+import traceback
+
+# track import errors for diagnostics
+pipeline_import_error: str | None = None
+filter_pipeline_import_error: str | None = None
 
 # Support both local and Docker imports
 try:
@@ -30,21 +35,23 @@ except Exception:
 try:
     # prefer package-style import when running from src/ layout
     from src import lead_auto_pipeline_de as pipeline
-except Exception:
+except Exception as e:
     try:
         # fallback when running from repository root where Backend/ is top-level
         from Backend import lead_auto_pipeline_de as pipeline  # type: ignore
-    except Exception:
+    except Exception as e2:
         pipeline = None  # type: ignore
+        pipeline_import_error = (str(e2) or str(e) or "unknown error") + "\n" + traceback.format_exc()
 
 # New: optional filter pipeline to auto-generate offers for low-website-quality leads
 try:
     from src import lead_filter_pipeline as filter_pipeline
-except Exception:
+except Exception as e:
     try:
         from Backend import lead_filter_pipeline as filter_pipeline  # type: ignore
-    except Exception:
+    except Exception as e2:
         filter_pipeline = None  # type: ignore
+        filter_pipeline_import_error = (str(e2) or str(e) or "unknown error") + "\n" + traceback.format_exc()
 
 app = FastAPI(title="Website Service API")
 
@@ -837,6 +844,9 @@ async def debug_filter_pipeline():
             info["has_slugify"] = False
     except Exception:
         info["has_slugify"] = False
+    # Add captured import errors for debugging
+    info["pipeline_import_error"] = pipeline_import_error
+    info["filter_pipeline_import_error"] = filter_pipeline_import_error
     return info
 
 
