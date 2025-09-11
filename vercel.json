@@ -1,7 +1,7 @@
 {
   "version": 2,
   "functions": {
-    "**/api/**/*.py": {
+    "/Backend/src/api/**/*.py": {
       "includeFiles": [
         "Backend/**"
       ]
