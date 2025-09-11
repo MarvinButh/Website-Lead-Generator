@@ -86,6 +86,55 @@ def _env_truthy(name: str, default: bool = False) -> bool:
     return _is_truthy(val)
 
 
+# Mapping from client outreach keys to env variable names used by filter pipeline
+OUTREACH_ENV_MAP: dict[str, str] = {
+    "yourName": "YOUR_NAME",
+    "yourTitle": "YOUR_TITLE",
+    "yourCompany": "YOUR_COMPANY",
+    "yourEmail": "YOUR_EMAIL",
+    "yourPhone": "YOUR_PHONE",
+    "yourWebsite": "YOUR_WEBSITE",
+    "calendarLink": "CALENDAR_LINK",
+    "projectLink": "PROJECT_LINK",
+    "shortOutcome": "SHORT_OUTCOME",
+    "defaultPrice": "DEFAULT_PRICE",
+    "defaultPages": "DEFAULT_PAGES",
+    "defaultTimeline": "DEFAULT_TIMELINE",
+    "supportPeriod": "SUPPORT_PERIOD",
+    # Optional extras if present in future
+    "defaultRole": "DEFAULT_ROLE",
+}
+
+
+def _apply_outreach_to_env(outreach: Optional[dict]) -> dict[str, Optional[str]]:
+    """Set environment variables from outreach dict and return a map of previous values for restoration."""
+    prev: dict[str, Optional[str]] = {}
+    if not isinstance(outreach, dict):
+        return prev
+    # capture previous
+    for env_name in OUTREACH_ENV_MAP.values():
+        prev[env_name] = os.getenv(env_name)
+    # set new values
+    for key, env_name in OUTREACH_ENV_MAP.items():
+        val = outreach.get(key)
+        if isinstance(val, (str, int, float)):
+            sval = str(val).strip()
+            if sval:
+                os.environ[env_name] = sval
+    return prev
+
+
+def _restore_env(prev: dict[str, Optional[str]]):
+    for env_name, old_val in (prev or {}).items():
+        if old_val is None:
+            try:
+                del os.environ[env_name]
+            except Exception:
+                pass
+        else:
+            os.environ[env_name] = old_val
+
+
 class LeadOut(BaseModel):
     id: int
     company_name: str
@@ -113,6 +162,8 @@ class GenerateLeadsIn(BaseModel):
     autoFilter: bool | None = Field(None, alias="auto_filter")
     # New: template language from frontend settings (camelCase alias)
     template_lang: str | None = Field(None, alias="templateLang")
+    # New: outreach defaults from settings page to drive templates
+    outreach: dict[str, str] | None = None
 
     # pydantic v2: ensure we accept population by field name (camelCase)
     if ConfigDict is not None:  # type: ignore[name-defined]
@@ -385,6 +436,8 @@ async def generate_leads(payload: GenerateLeadsIn, request: Request):
     old_up, old_uo = pipeline.USE_PLACES, pipeline.USE_OVERPASS
     # New: temporarily override TEMPLATE_LANG env based on request
     old_tpl_lang = os.getenv("TEMPLATE_LANG")
+    # New: temporarily apply outreach envs
+    outreach_prev_env: dict[str, Optional[str]] = {}
     try:
         pipeline.CITY = city
         pipeline.COUNTRY_CODE = country_code
@@ -394,6 +447,9 @@ async def generate_leads(payload: GenerateLeadsIn, request: Request):
         # If client provided a template language, apply for offer generation
         if isinstance(payload.template_lang, str) and payload.template_lang.strip():
             os.environ["TEMPLATE_LANG"] = payload.template_lang.strip()
+        
+        # If client provided outreach defaults, temporarily set envs used by generator
+        outreach_prev_env = _apply_outreach_to_env(payload.outreach)
         
         # Collect
         all_rows = []
@@ -502,5 +558,10 @@ async def generate_leads(payload: GenerateLeadsIn, request: Request):
                 pass
         else:
             os.environ["TEMPLATE_LANG"] = old_tpl_lang
+        # Restore outreach envs
+        try:
+            _restore_env(outreach_prev_env)
+        except Exception:
+            pass
 
 

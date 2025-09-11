@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import GoogleKeyModal from "./GoogleKeyModal";
 import Toast from "./Toast";
-import { STORAGE_KEY as SETTINGS_KEY, readOverrides, setOverrides, getGooglePlacesKeyFromSettings } from "../lib/settings";
+import { STORAGE_KEY as SETTINGS_KEY, readOverrides, setOverrides, getGooglePlacesKeyFromSettings, readSettings, type RawSettings } from "../lib/settings";
 
 export default function LeadSearchForm() {
   // Prefer user overrides stored in localStorage over build-time env vars.
@@ -132,7 +132,11 @@ export default function LeadSearchForm() {
     setError(null);
     setResult(null);
 
-    const payloadBody = { keywords, city, country_code: countryCode, use_overpass: (searchProvider === "overpass"), autoFilter: autoFilter, templateLang };
+    // Load full settings so we can forward outreach defaults to backend
+    const fullSettings: RawSettings = (typeof window !== 'undefined') ? readSettings() : {} as RawSettings;
+    const outreach: RawSettings["outreach"] = (fullSettings && typeof fullSettings.outreach === 'object') ? fullSettings.outreach : undefined;
+
+    const payloadBody = { keywords, city, country_code: countryCode, use_overpass: (searchProvider === "overpass"), autoFilter: autoFilter, templateLang, outreach };
 
     // If service worker is available and active, hand off the job to the worker so it runs in background
     const swAvailable = !!(navigator.serviceWorker && (navigator.serviceWorker.controller || swRegistrationRef.current?.active));
