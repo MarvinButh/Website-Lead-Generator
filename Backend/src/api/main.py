@@ -24,11 +24,11 @@ filter_pipeline_import_error: str | None = None
 # Support both local and Docker imports
 try:
     from src.db.engine import SessionLocal, engine
-    from src.db.models.lead import Lead, Base
+    from src.db.models.lead import Lead, Base, ColdEmailTemplate, ColdPhoneCallTemplate, OfferSheetTemplate
     from src.db.repositories.lead_repository import LeadRepository
 except Exception:
     from Backend.src.db.engine import SessionLocal, engine  # type: ignore
-    from Backend.src.db.models.lead import Lead, Base  # type: ignore
+    from Backend.src.db.models.lead import Lead, Base, ColdEmailTemplate, ColdPhoneCallTemplate, OfferSheetTemplate  # type: ignore
     from Backend.src.db.repositories.lead_repository import LeadRepository  # type: ignore
 
 # Import pipeline helpers
@@ -413,114 +413,76 @@ def _run_generate_offers_for_all(overwrite: bool = False) -> dict:
 # New: generate assets for a single lead by slug (company slug used for offer-sheets dir)
 @app.post("/leads/{slug}/generate-assets")
 async def generate_assets_for_slug(slug: str):
-    if not filter_pipeline:
-        return {"ok": False}
+    # DB-first approach: generate scripts from template tables, persist into lead row.
+    lang = (os.getenv('TEMPLATE_LANG') or os.getenv('LANG') or 'en').strip().lower()
+    persisted = False
+    email_len = 0
+    phone_len = 0
     try:
-        df = filter_pipeline.load_from_db()
-        if df.empty:
-            return {"ok": False}
-        company_col = filter_pipeline.guess_company_column(df)
-        # Find row by slug
-        target_row = None
-        for _, row in df.iterrows():
-            comp = str(row.get(company_col, ""))
-            if filter_pipeline.slugify(comp) == slug:
-                target_row = row
-                break
-        if target_row is None:
-            return {"ok": False}
-        output_root = _get_offers_root()
-        filter_pipeline.ensure_dir(output_root)
-        template_path = Path(getattr(filter_pipeline, "DEFAULT_TEMPLATE", "templates/docx/Angebot-Webseitenservice.docx"))
-        filter_pipeline.generate_offer(
-            row=target_row,
-            template_path=template_path,
-            company_col=company_col,
-            output_root=output_root,
-            overwrite=False,
-        )
-
-        # After generation, try to read generated scripts and persist them into the DB
-        def _read_text(p: Path) -> Optional[str]:
-            try:
-                return p.read_text(encoding="utf-8")
-            except Exception:
-                return None
-
-        # locate the generated directory (case-insensitive)
-        target_dir = output_root / slug.lower()
-        if not target_dir.exists() or not target_dir.is_dir():
-            try:
-                for entry in output_root.iterdir():
-                    if entry.is_dir() and entry.name.lower() == slug.lower():
-                        target_dir = entry
+        with SessionLocal() as session:
+            leads = session.query(Lead).filter(Lead.company_name != None).all()
+            target_lead: Lead | None = None
+            for l in leads:
+                try:
+                    if _slugify_local(l.company_name) == slug.lower():
+                        target_lead = l
                         break
-            except Exception:
-                pass
-
-        email_script = _read_text(target_dir / "cold_email.md") or ""
-        phone_script = _read_text(target_dir / "cold_phone_call.md") or ""
-
-        # Diagnostics logging for troubleshooting persistence
+                except Exception:
+                    continue
+            if not target_lead:
+                return {"ok": False, "error": "lead_not_found"}
+            mapping = _build_placeholder_mapping_for_lead(target_lead)
+            email_tpl = _fetch_template(session, ColdEmailTemplate, lang)
+            phone_tpl = _fetch_template(session, ColdPhoneCallTemplate, lang)
+            email_rendered = _render_template(getattr(email_tpl, 'content', '') or '', mapping)
+            phone_rendered = _render_template(getattr(phone_tpl, 'content', '') or '', mapping)
+            # Persist if new or empty
+            changed = False
+            if email_rendered and email_rendered != (target_lead.email_script or ''):
+                target_lead.email_script = email_rendered
+                changed = True
+            if phone_rendered and phone_rendered != (target_lead.phone_script or ''):
+                target_lead.phone_script = phone_rendered
+                changed = True
+            if changed:
+                from datetime import datetime as _dt
+                target_lead.scripts_generated_at = _dt.utcnow()
+                session.add(target_lead)
+                session.commit()
+                persisted = True
+            email_len = len(email_rendered)
+            phone_len = len(phone_rendered)
+    except Exception as e:
         try:
-            logging.getLogger("uvicorn.error").debug("Assets target_dir=%s", str(target_dir))
-            logging.getLogger("uvicorn.error").debug("Read email_script length=%d, phone_script length=%d", len(email_script), len(phone_script))
+            logging.getLogger('uvicorn.error').exception('DB template generation failed for slug %s: %s', slug, e)
         except Exception:
             pass
-
-        persisted = False
-        
-        if email_script or phone_script:
+        # Fallback to legacy pipeline if available
+        if filter_pipeline:
             try:
-                with SessionLocal() as session:
-                    # Find matching Lead by slugifying company_name (fallback to exact company_name match)
-                    candidates = session.query(Lead).filter(Lead.company_name != None).all()
-                    matched = None
-                    for l in candidates:
-                        try:
-                            # log candidate comparison
-                            try:
-                                logging.getLogger("uvicorn.error").debug("Checking candidate id=%s name=%s", getattr(l, 'id', None), getattr(l, 'company_name', None))
-                            except Exception:
-                                pass
-                            if filter_pipeline and filter_pipeline.slugify(l.company_name) == slug:
-                                matched = l
-                                break
-                            # Fallback: direct case-insensitive company name match against source row if available
-                            try:
-                                source_name = str(target_row.get(company_col, "") or "").strip().lower()
-                            except Exception:
-                                source_name = ""
-                            if source_name and isinstance(l.company_name, str) and l.company_name.strip().lower() == source_name:
-                                matched = l
-                                break
-                        except Exception:
-                            continue
-                    if not matched:
-                        try:
-                            logging.getLogger("uvicorn.error").debug("No DB lead matched for slug %s (checked %d candidates)", slug, len(candidates))
-                        except Exception:
-                            pass
-                    if matched:
-                        # only set if non-empty to avoid clobbering blanks
-                        if email_script:
-                            matched.email_script = email_script
-                        if phone_script:
-                            matched.phone_script = phone_script
-                        matched.scripts_generated_at = datetime.utcnow()
-                        session.add(matched)
-                        session.commit()
-                        persisted = True
+                df = filter_pipeline.load_from_db()
+                if not df.empty:
+                    company_col = filter_pipeline.guess_company_column(df)
+                    target_row = None
+                    for _, row in df.iterrows():
+                        comp = str(row.get(company_col, ''))
+                        if filter_pipeline.slugify(comp) == slug:
+                            target_row = row
+                            break
+                    if target_row is not None:
+                        output_root = _get_offers_root()
+                        filter_pipeline.ensure_dir(output_root)
+                        template_path = Path(getattr(filter_pipeline, 'DEFAULT_TEMPLATE', 'templates/docx/Angebot-Webseitenservice.docx'))
+                        filter_pipeline.generate_offer(
+                            row=target_row,
+                            template_path=template_path,
+                            company_col=company_col,
+                            output_root=output_root,
+                            overwrite=False,
+                        )
             except Exception:
-                # Don't fail the entire endpoint if DB write fails
-                try:
-                    logging.getLogger("uvicorn.error").exception("Failed to persist scripts for slug %s", slug)
-                except Exception:
-                    pass
-
-        return {"ok": True, "persisted": persisted, "email_len": len(email_script), "phone_len": len(phone_script), "target_dir": str(target_dir)}
-    except Exception:
-        return {"ok": False}
+                pass
+    return {"ok": True, "persisted": persisted, "email_len": email_len, "phone_len": phone_len}
 
 
 # New: helper to run filter only (no generation)
@@ -848,5 +810,124 @@ async def debug_filter_pipeline():
     info["pipeline_import_error"] = pipeline_import_error
     info["filter_pipeline_import_error"] = filter_pipeline_import_error
     return info
+
+
+# ---------------- Template Rendering (DB-backed) ---------------- #
+
+def _slugify_local(text: str) -> str:
+    try:
+        if filter_pipeline and hasattr(filter_pipeline, 'slugify'):
+            return filter_pipeline.slugify(text)  # type: ignore
+    except Exception:
+        pass
+    import re as _re
+    import unicodedata as _ud
+    if not isinstance(text, str):
+        text = str(text or '')
+    text = _ud.normalize('NFKD', text).encode('ascii', 'ignore').decode('ascii')
+    text = text.strip()
+    text = _re.sub(r"[^\w\s-]", "", text)
+    text = _re.sub(r"[\s_-]+", "-", text)
+    text = _re.sub(r"^-+|-+$", "", text)
+    return (text or 'company').lower()
+
+_DEF_PLACEHOLDER_STYLES = (
+    lambda k: f"{{{{{k}}}}}",
+    lambda k: f"{{{k}}}",
+    lambda k: f"[{k}]",
+)
+
+def _register_placeholder(mapping: dict, key: str, value: str | None):
+    if value is None:
+        value = ''
+    for style in _DEF_PLACEHOLDER_STYLES:
+        mapping[style(key)] = value
+
+
+def _build_placeholder_mapping_for_lead(lead: Lead) -> dict:
+    mapping: dict[str, str] = {}
+    company = lead.company_name or ''
+    contact = getattr(lead, 'contact', '') or ''
+    first_name = contact.split()[0] if contact else ''
+    city = getattr(lead, 'city', '') or ''
+    industry = getattr(lead, 'industry', '') or ''
+    phone = getattr(lead, 'phone', '') or ''
+    email = getattr(lead, 'email', '') or ''
+    website = getattr(lead, 'website', '') or ''
+
+    # Sender/env values override or complement
+    your_name = os.getenv('YOUR_NAME', '')
+    your_title = os.getenv('YOUR_TITLE', os.getenv('TITLE', ''))
+    your_company = os.getenv('YOUR_COMPANY', '')
+    your_email = os.getenv('YOUR_EMAIL', email)
+    your_phone = os.getenv('YOUR_PHONE', phone)
+    your_website = os.getenv('YOUR_WEBSITE', website)
+    calendar_link = os.getenv('CALENDAR_LINK', '')
+    project_link = os.getenv('PROJECT_LINK', '')
+    short_outcome = os.getenv('SHORT_OUTCOME', '')
+    default_price = os.getenv('DEFAULT_PRICE', '')
+    default_pages = os.getenv('DEFAULT_PAGES', '')
+    default_timeline = os.getenv('DEFAULT_TIMELINE', '')
+    support_period = os.getenv('SUPPORT_PERIOD', '')
+    role_default = os.getenv('DEFAULT_ROLE', 'Owner')
+
+    alias_values = {
+        'BusinessName': company,
+        'Business Name': company,
+        'LeadCompany': company,
+        'City': city,
+        'FirstName': first_name,
+        'Industry': industry,
+        'Phone': your_phone or phone,
+        'Email': email or your_email,
+        'Website': your_website or website,
+        'URL': website,
+        'Price': default_price,
+        'Pages': default_pages,
+        'Timeline': default_timeline,
+        'SupportPeriod': support_period,
+        'ProjectLink': project_link,
+        'ShortOutcome': short_outcome,
+        'CalendarLink': calendar_link,
+        'Link': calendar_link,
+        'Short URL': calendar_link,
+        'YourName': your_name,
+        'Your Title': your_title,
+        'YourTitle': your_title,
+        'Title': your_title,
+        'Your Company': your_company,
+        'Company': your_company,
+        'Owner/Manager Name': contact,
+        'Name': contact,
+        'Role': role_default,
+    }
+    for k, v in alias_values.items():
+        _register_placeholder(mapping, k, v)
+    # Date convenience
+    from datetime import datetime as _dt
+    today = _dt.utcnow().strftime('%d.%m.%Y')
+    for d in ('DATE', 'Date'):  # multiple styles
+        _register_placeholder(mapping, d, today)
+    return mapping
+
+
+def _render_template(raw: str, mapping: dict) -> str:
+    if not raw:
+        return ''
+    # simple multi-pass replace (order not critical due to distinct tokens)
+    for placeholder, value in mapping.items():
+        if placeholder in raw:
+            raw = raw.replace(placeholder, value)
+    # strip leftover unmatched tokens
+    import re as _re
+    raw = _re.sub(r"\{\{[^}]+\}\}|\{[^}]+\}|\[[^\]]+\]", "", raw)
+    return raw.strip()
+
+
+def _fetch_template(session, model, lang: str, fallback: str = 'en'):
+    obj = session.query(model).filter(model.language == lang).first()
+    if not obj and fallback and fallback != lang:
+        obj = session.query(model).filter(model.language == fallback).first()
+    return obj
 
 

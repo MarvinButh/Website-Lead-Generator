@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, UniqueConstraint
 from sqlalchemy.orm import declarative_base
 from datetime import datetime
 
@@ -27,3 +27,31 @@ class Lead(Base):
             f"<Lead(id={self.id}, company_name='{self.company_name}', website='{self.website}', "
             f"email='{self.email}', phone='{self.phone}', interested={self.interested})>"
         )
+
+
+class ColdEmailTemplate(Base):
+    __tablename__ = 'cold_email_templates'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    language = Column(String(10), nullable=False)
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    __table_args__ = (UniqueConstraint('language', name='uq_cold_email_template_language'),)
+
+class ColdPhoneCallTemplate(Base):
+    __tablename__ = 'cold_phone_call_templates'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    language = Column(String(10), nullable=False)
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    __table_args__ = (UniqueConstraint('language', name='uq_cold_phone_call_template_language'),)
+
+class OfferSheetTemplate(Base):
+    __tablename__ = 'offer_sheet_templates'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    language = Column(String(10), nullable=False)
+    content = Column(Text, nullable=False)  # Could store raw DOCX XML or markdown/HTML placeholders
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    __table_args__ = (UniqueConstraint('language', name='uq_offer_sheet_template_language'),)
