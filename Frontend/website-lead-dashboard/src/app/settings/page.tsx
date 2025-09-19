@@ -236,7 +236,7 @@ export default function SettingsPage() {
             <div>
               <label className="block text-sm text-gray-600 dark:text-gray-300">Google Places API Key</label>
               <input
-                className="mt-1 w-full rounded border px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+                className="input input-bordered w-full"
                 value={apiKeys.googlePlaces || ""}
                 onChange={(e) => setApiKeys((k) => ({ ...k, googlePlaces: e.target.value }))}
                 placeholder="GOOGLE_API_KEY"
@@ -246,7 +246,7 @@ export default function SettingsPage() {
             <div>
               <label className="block text-sm text-gray-600 dark:text-gray-300">Google Maps Embed API Key</label>
               <input
-                className="mt-1 w-full rounded border px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+                className="input input-bordered w-full"
                 value={apiKeys.googleMapsEmbed || ""}
                 onChange={(e) => setApiKeys((k) => ({ ...k, googleMapsEmbed: e.target.value }))}
                 placeholder="NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY"
@@ -262,9 +262,9 @@ export default function SettingsPage() {
 
           <div className="mt-4 grid grid-cols-1 gap-3">
             <div>
-              <label className="block text-sm">Default keywords</label>
+              <label className="label-text">Default keywords</label>
               <input
-                className="mt-1 w-full rounded border px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+                className="input input-bordered w-full"
                 value={overrides.defaultKeywords}
                 onChange={(e) => setOverrides((o) => ({ ...o, defaultKeywords: e.target.value }))}
                 placeholder="e.g. Bäckerei, Friseur"
@@ -273,9 +273,9 @@ export default function SettingsPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm">Default city</label>
+                <label className="label-text">Default city</label>
                 <input
-                  className="mt-1 w-full rounded border px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+                  className="input input-bordered w-full"
                   value={overrides.defaultCity}
                   onChange={(e) => setOverrides((o) => ({ ...o, defaultCity: e.target.value }))}
                   placeholder="City"
@@ -283,9 +283,9 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-sm">Default country code</label>
+                <label className="label-text">Default country code</label>
                 <input
-                  className="mt-1 w-full rounded border px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+                  className="input input-bordered w-full"
                   value={overrides.defaultCountryCode}
                   onChange={(e) => setOverrides((o) => ({ ...o, defaultCountryCode: e.target.value }))}
                   placeholder="DE"
@@ -317,9 +317,9 @@ export default function SettingsPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm">API base (optional)</label>
+                <label className="label-text">API base (optional)</label>
                 <input
-                  className="mt-1 w-full rounded border px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+                  className="input input-bordered w-full"
                   value={overrides.apiBase}
                   onChange={(e) => setOverrides((o) => ({ ...o, apiBase: e.target.value }))}
                   placeholder="http://localhost:8000"
@@ -329,9 +329,9 @@ export default function SettingsPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm">Frontend origin</label>
+                <label className="label-text">Frontend origin</label>
                 <input
-                  className="mt-1 w-full rounded border px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+                  className="input input-bordered w-full"
                   value={overrides.frontendOrigin}
                   onChange={(e) => setOverrides((o) => ({ ...o, frontendOrigin: e.target.value }))}
                   placeholder="http://localhost:3000"
@@ -339,9 +339,9 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-sm">Template language</label>
+                <label className="label-text">Template language</label>
                 <select
-                  className="mt-1 w-full rounded border px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+                  className="input input-bordered w-full"
                   value={overrides.templateLang}
                   onChange={(e) => setOverrides((o) => ({ ...o, templateLang: e.target.value }))}
                 >
@@ -355,9 +355,9 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <label className="block text-sm">UI language</label>
+              <label className="label-text">UI language</label>
               <select
-                className="mt-1 w-full rounded border px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+                className="input input-bordered w-full"
                 value={overrides.language}
                 onChange={(e) => setOverrides((o) => ({ ...o, language: e.target.value }))}
               >
@@ -379,76 +379,76 @@ export default function SettingsPage() {
           <div className="mt-4 grid grid-cols-1 gap-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm">Your name</label>
-                <input className="mt-1 w-full rounded border px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100" value={outreach.yourName} onChange={(e) => setOutreach((o) => ({ ...o, yourName: e.target.value }))} />
+                <label className="label-text">Your name</label>
+                <input className="input input-bordered w-full" value={outreach.yourName} onChange={(e) => setOutreach((o) => ({ ...o, yourName: e.target.value }))} />
               </div>
 
               <div>
-                <label className="block text-sm">Your title</label>
-                <input className="mt-1 w-full rounded border px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100" value={outreach.yourTitle} onChange={(e) => setOutreach((o) => ({ ...o, yourTitle: e.target.value }))} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm">Company</label>
-                <input className="mt-1 w-full rounded border px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100" value={outreach.yourCompany} onChange={(e) => setOutreach((o) => ({ ...o, yourCompany: e.target.value }))} />
-              </div>
-
-              <div>
-                <label className="block text-sm">Email</label>
-                <input className="mt-1 w-full rounded border px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100" value={outreach.yourEmail} onChange={(e) => setOutreach((o) => ({ ...o, yourEmail: e.target.value }))} />
+                <label className="label-text">Your title</label>
+                <input className="input input-bordered w-full" value={outreach.yourTitle} onChange={(e) => setOutreach((o) => ({ ...o, yourTitle: e.target.value }))} />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm">Phone</label>
-                <input className="mt-1 w-full rounded border px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100" value={outreach.yourPhone} onChange={(e) => setOutreach((o) => ({ ...o, yourPhone: e.target.value }))} />
+                <label className="label-text">Company</label>
+                <input className="input input-bordered w-full" value={outreach.yourCompany} onChange={(e) => setOutreach((o) => ({ ...o, yourCompany: e.target.value }))} />
               </div>
 
               <div>
-                <label className="block text-sm">Website</label>
-                <input className="mt-1 w-full rounded border px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100" value={outreach.yourWebsite} onChange={(e) => setOutreach((o) => ({ ...o, yourWebsite: e.target.value }))} />
+                <label className="label-text">Email</label>
+                <input className="input input-bordered w-full" value={outreach.yourEmail} onChange={(e) => setOutreach((o) => ({ ...o, yourEmail: e.target.value }))} />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm">Calendar link</label>
-                <input className="mt-1 w-full rounded border px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100" value={outreach.calendarLink} onChange={(e) => setOutreach((o) => ({ ...o, calendarLink: e.target.value }))} />
+                <label className="label-text">Phone</label>
+                <input className="input input-bordered w-full" value={outreach.yourPhone} onChange={(e) => setOutreach((o) => ({ ...o, yourPhone: e.target.value }))} />
               </div>
 
               <div>
-                <label className="block text-sm">Project link</label>
-                <input className="mt-1 w-full rounded border px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100" value={outreach.projectLink} onChange={(e) => setOutreach((o) => ({ ...o, projectLink: e.target.value }))} />
+                <label className="label-text">Website</label>
+                <input className="input input-bordered w-full" value={outreach.yourWebsite} onChange={(e) => setOutreach((o) => ({ ...o, yourWebsite: e.target.value }))} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="label-text">Calendar link</label>
+                <input className="input input-bordered w-full" value={outreach.calendarLink} onChange={(e) => setOutreach((o) => ({ ...o, calendarLink: e.target.value }))} />
+              </div>
+
+              <div>
+                <label className="label-text">Project link</label>
+                <input className="input input-bordered w-full" value={outreach.projectLink} onChange={(e) => setOutreach((o) => ({ ...o, projectLink: e.target.value }))} />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-sm">Short outcome</label>
-                <input className="mt-1 w-full rounded border px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100" value={outreach.shortOutcome} onChange={(e) => setOutreach((o) => ({ ...o, shortOutcome: e.target.value }))} />
+                <label className="label-text">Short outcome</label>
+                <input className="input input-bordered w-full" value={outreach.shortOutcome} onChange={(e) => setOutreach((o) => ({ ...o, shortOutcome: e.target.value }))} />
               </div>
               <div>
-                <label className="block text-sm">Default price</label>
-                <input className="mt-1 w-full rounded border px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100" value={outreach.defaultPrice} onChange={(e) => setOutreach((o) => ({ ...o, defaultPrice: e.target.value }))} />
+                <label className="label-text">Default price</label>
+                <input className="input input-bordered w-full" value={outreach.defaultPrice} onChange={(e) => setOutreach((o) => ({ ...o, defaultPrice: e.target.value }))} />
               </div>
               <div>
-                <label className="block text-sm">Default pages</label>
-                <input className="mt-1 w-full rounded border px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100" value={outreach.defaultPages} onChange={(e) => setOutreach((o) => ({ ...o, defaultPages: e.target.value }))} />
+                <label className="label-text">Default pages</label>
+                <input className="input input-bordered w-full" value={outreach.defaultPages} onChange={(e) => setOutreach((o) => ({ ...o, defaultPages: e.target.value }))} />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm">Default timeline</label>
-                <input className="mt-1 w-full rounded border px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100" value={outreach.defaultTimeline} onChange={(e) => setOutreach((o) => ({ ...o, defaultTimeline: e.target.value }))} />
+                <label className="label-text">Default timeline</label>
+                <input className="input input-bordered w-full" value={outreach.defaultTimeline} onChange={(e) => setOutreach((o) => ({ ...o, defaultTimeline: e.target.value }))} />
               </div>
 
               <div>
-                <label className="block text-sm">Support period</label>
-                <input className="mt-1 w-full rounded border px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100" value={outreach.supportPeriod} onChange={(e) => setOutreach((o) => ({ ...o, supportPeriod: e.target.value }))} />
+                <label className="label-text">Support period</label>
+                <input className="input input-bordered w-full" value={outreach.supportPeriod} onChange={(e) => setOutreach((o) => ({ ...o, supportPeriod: e.target.value }))} />
               </div>
             </div>
           </div>
@@ -456,7 +456,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="mt-6 flex gap-3">
-        <button className="rounded-2xl bg-green-600 px-4 py-2 text-white hover:bg-green-700" onClick={save} type="button">Save settings</button>
+        <button className="btn btn-success" onClick={save} type="button">Save settings</button>
 
         <button className="rounded-2xl border px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800" onClick={reloadFromStorage} type="button">Reload</button>
 

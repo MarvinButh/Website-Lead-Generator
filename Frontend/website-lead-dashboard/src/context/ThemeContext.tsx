@@ -27,12 +27,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   });
 
   // Apply/remove the `dark` class on <html> so Tailwind `dark:` styles work
+  // Also set data-theme attribute for DaisyUI
   useEffect(() => {
     const root = document.documentElement;
     if (theme === "dark") {
       root.classList.add("dark");
+      root.setAttribute("data-theme", "dark");
     } else {
       root.classList.remove("dark");
+      root.setAttribute("data-theme", "light");
     }
     window.localStorage.setItem(THEME_STORAGE_KEY, theme);
   }, [theme]);

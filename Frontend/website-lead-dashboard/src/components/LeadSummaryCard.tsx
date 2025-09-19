@@ -33,86 +33,88 @@ export default function LeadSummaryCard({ lead, fallback }: Props) {
 
   return (
     <div
-      className={`w-full rounded-md border bg-white dark:bg-gray-800 dark:border-gray-700 shadow-sm p-4 md:p-6 transition-all duration-300 ease-out transform ${
+      className={`card bg-base-100 shadow-lg transition-all duration-300 ease-out transform ${
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
       }`}
       aria-live="polite"
     >
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h3 className="text-xl font-semibold leading-tight">{name}</h3>
-          <p className="text-sm text-gray-500 mt-1">{industry || (city ? city : "")}</p>
-        </div>
-        <div className="text-sm text-gray-600">
-          <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${
-              interested === true
-                ? "bg-green-100 text-green-800"
-                : interested === false
-                ? "bg-red-100 text-red-800"
-                : "bg-gray-100 text-gray-800"
-            }`}
-          >
-            {interested === true ? "Interested" : interested === false ? "Not interested" : "Unknown"}
-          </span>
-        </div>
-      </div>
-
-      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-        <div className="space-y-2">
+      <div className="card-body">
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="text-xs text-gray-500">Contact</div>
-            <div className="text-sm text-gray-900 dark:text-gray-100">{contact || "—"}</div>
+            <h3 className="card-title text-xl">{name}</h3>
+            <p className="text-sm opacity-70 mt-1">{industry || (city ? city : "")}</p>
           </div>
-
-          <div>
-            <div className="text-xs text-gray-500">Phone</div>
-            <div className="text-sm text-gray-900 dark:text-gray-100">{phone || "—"}</div>
-          </div>
-
-          <div>
-            <div className="text-xs text-gray-500">Email</div>
-            <div className="text-sm text-gray-900 dark:text-gray-100 truncate">{email || "—"}</div>
+          <div className="text-sm">
+            <div
+              className={`badge ${
+                interested === true
+                  ? "badge-success"
+                  : interested === false
+                  ? "badge-error"
+                  : "badge-ghost"
+              }`}
+            >
+              {interested === true ? "Interested" : interested === false ? "Not interested" : "Unknown"}
+            </div>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <div>
-            <div className="text-xs text-gray-500">City</div>
-            <div className="text-sm text-gray-900 dark:text-gray-100">{city || "—"}</div>
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+          <div className="space-y-2">
+            <div>
+              <div className="text-xs opacity-70">Contact</div>
+              <div className="text-sm">{contact || "—"}</div>
+            </div>
+
+            <div>
+              <div className="text-xs opacity-70">Phone</div>
+              <div className="text-sm">{phone || "—"}</div>
+            </div>
+
+            <div>
+              <div className="text-xs opacity-70">Email</div>
+              <div className="text-sm truncate">{email || "—"}</div>
+            </div>
           </div>
 
-          <div>
-            <div className="text-xs text-gray-500">Website</div>
-            <div className="text-sm text-blue-600 dark:text-blue-400 truncate">{website || "—"}</div>
+          <div className="space-y-2">
+            <div>
+              <div className="text-xs opacity-70">City</div>
+              <div className="text-sm">{city || "—"}</div>
+            </div>
+
+            <div>
+              <div className="text-xs opacity-70">Website</div>
+              <div className="text-sm text-info truncate">{website || "—"}</div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="mt-4 flex items-center justify-end gap-2">
-        {typed?.id ? (
-          <button
-            onClick={() => {
-              const leadObj = typed as SelectedLead;
-              // prefer explicit slug, else generate from company_name, else use id
-              const explicit = leadObj.slug && String(leadObj.slug).trim();
-              const generated = !explicit && leadObj.company_name ? slugify(leadObj.company_name) : undefined;
-              const finalSlug = explicit || generated || String(leadObj.id);
-              router.push(`/lead/${encodeURIComponent(finalSlug)}`);
-            }}
-            className="px-3 py-1 rounded border text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            aria-label={`Open lead ${name}`}
-          >
-            Open
-          </button>
-        ) : (
-          <button
-            disabled
-            className="px-3 py-1 rounded border text-sm text-gray-400 cursor-not-allowed"
-          >
-            Open
-          </button>
-        )}
+        <div className="card-actions justify-end mt-4">
+          {typed?.id ? (
+            <button
+              onClick={() => {
+                const leadObj = typed as SelectedLead;
+                // prefer explicit slug, else generate from company_name, else use id
+                const explicit = leadObj.slug && String(leadObj.slug).trim();
+                const generated = !explicit && leadObj.company_name ? slugify(leadObj.company_name) : undefined;
+                const finalSlug = explicit || generated || String(leadObj.id);
+                router.push(`/lead/${encodeURIComponent(finalSlug)}`);
+              }}
+              className="btn btn-primary btn-sm"
+              aria-label={`Open lead ${name}`}
+            >
+              Open
+            </button>
+          ) : (
+            <button
+              disabled
+              className="btn btn-disabled btn-sm"
+            >
+              Open
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

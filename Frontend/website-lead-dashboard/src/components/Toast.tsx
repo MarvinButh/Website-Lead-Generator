@@ -15,14 +15,14 @@ export default function Toast({ message, type = "info", duration = 3000, onClose
     return () => clearTimeout(t);
   }, [duration, onClose]);
 
-  const bg = type === "success" ? "bg-green-600" : type === "error" ? "bg-red-600" : "bg-gray-800";
+  const alertClass = type === "success" ? "alert-success" : type === "error" ? "alert-error" : "alert-info";
   const icon = type === "success" ? "✓" : type === "error" ? "⚠" : "i";
 
   return (
-    <div className={`pointer-events-auto max-w-sm w-full ${bg} text-white shadow-lg rounded-md p-3 flex items-start gap-3`}>
+    <div className={`alert ${alertClass} shadow-lg max-w-sm w-full pointer-events-auto`}>
       <div className="text-sm font-bold leading-none">{icon}</div>
       <div className="text-sm flex-1">{message}</div>
-      <button onClick={() => onClose && onClose()} className="text-white text-opacity-80 hover:text-opacity-100 ml-2">✕</button>
+      <button onClick={() => onClose && onClose()} className="btn btn-sm btn-circle btn-ghost">✕</button>
     </div>
   );
 }

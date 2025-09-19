@@ -54,7 +54,7 @@ export default function LeadCard({ lead, noNavigate }: { lead: Lead; noNavigate?
           // ignore on non-browser envs
         }
       }
-    } catch (_e) {
+    } catch {
       // ignore
     } finally {
       setUpdating(null);
@@ -73,24 +73,25 @@ export default function LeadCard({ lead, noNavigate }: { lead: Lead; noNavigate?
           onClick();
         }
       }}
-      className={`text-left w-full rounded-lg border p-4 shadow-sm transition hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500/40 cursor-pointer ${
+      className={`card card-compact cursor-pointer transition-all duration-200 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary/40 ${
         isSelected
-          ? "border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-gray-800"
-          : "border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800"
+          ? "border-primary bg-primary/10"
+          : "border-base-300 bg-base-100 hover:bg-base-200"
       }`}
     >
-      <div className="font-medium truncate">{lead.company_name}</div>
-      <div className="mt-1 text-sm text-gray-500 dark:text-gray-400 break-words">
-        {[lead.city, lead.industry, lead.email, lead.phone].filter(Boolean).join(" • ")}
-      </div>
-      <div className="mt-3 flex items-center gap-2">
+      <div className="card-body p-4">
+        <h3 className="card-title text-base font-medium truncate">{lead.company_name}</h3>
+        <p className="text-sm text-base-content/70 break-words">
+          {[lead.city, lead.industry, lead.email, lead.phone].filter(Boolean).join(" • ")}
+        </p>
+        <div className="card-actions justify-start mt-3 gap-2">
         <button
           onClick={(e) => {
             e.stopPropagation();
             setInterested(true);
           }}
           disabled={updating !== null || interestedState === true}
-          className="inline-flex items-center justify-center rounded bg-emerald-600 px-2 py-1 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+          className="btn btn-sm btn-success"
         >
           {interestedState === true ? "Interested" : updating === "interested" ? "..." : "Mark Interested"}
         </button>
@@ -100,7 +101,7 @@ export default function LeadCard({ lead, noNavigate }: { lead: Lead; noNavigate?
             setInterested(false);
           }}
           disabled={updating !== null || interestedState === false}
-          className="inline-flex items-center justify-center rounded bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+          className="btn btn-sm btn-error"
         >
           {interestedState === false ? "Discarded" : updating === "discard" ? "..." : "Discard"}
         </button>
@@ -110,11 +111,12 @@ export default function LeadCard({ lead, noNavigate }: { lead: Lead; noNavigate?
             href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lead.company_name + (lead.city ? ' ' + lead.city : ''))}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center rounded bg-blue-600 px-2 py-1 text-xs font-medium text-white hover:bg-blue-700"
+            className="btn btn-sm btn-info"
           >
             Open Maps
           </a>
         )}
+        </div>
       </div>
     </div>
   );
