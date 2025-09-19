@@ -56,39 +56,31 @@ export default function TopBar() {
   }, []);
 
   return (
-    <header className="w-full mb-6">
-      <div className="rounded-2xl border border-base-300 bg-base-100 shadow p-3 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            className="btn btn-ghost btn-square btn-sm"
-            aria-label="Go back"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
-              <path fillRule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 011.414 1.414L6.414 9H17a1 1 0 110 2H6.414l3.293 3.293a1 1 0 010 1.414z" clipRule="evenodd" />
-            </svg>
-          </button>
-
-          <div>
-            <div className="text-lg font-semibold">{titleFromPath(pathname)}</div>
-            <div className="text-xs opacity-70">Website Lead Dashboard</div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-base-200 border border-base-300">
-            <span className={`h-2 w-2 rounded-full ${swActive ? 'bg-success' : 'bg-base-content/40'}`} />
-            <span className="text-sm">SW {swActive ? 'active' : 'inactive'}</span>
-          </div>
-
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-base-200 border border-base-300">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
-              <path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v6a5 5 0 11-10 0H4a2 2 0 01-2-2V5z" />
-            </svg>
-            <span className="text-sm">Jobs {jobsCount}</span>
-          </div>
+    <div className="h-16 px-6 flex items-center justify-between">
+      {/* Left side - Page title */}
+      <div className="flex items-center gap-4">
+        <h1 className="text-xl font-semibold text-base-content">
+          {titleFromPath(pathname)}
+        </h1>
+        <div className="text-sm text-base-content/60">
+          Website Lead Dashboard
         </div>
       </div>
-    </header>
+
+      {/* Right side - Status indicators */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-base-200 rounded-lg">
+          <div className={`w-2 h-2 rounded-full ${swActive ? 'bg-success' : 'bg-warning'}`} />
+          <span className="text-xs font-medium">SW {swActive ? 'Active' : 'Inactive'}</span>
+        </div>
+
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-base-200 rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v6a5 5 0 11-10 0H4a2 2 0 01-2-2V5z" />
+          </svg>
+          <span className="text-xs font-medium">Jobs {jobsCount}</span>
+        </div>
+      </div>
+    </div>
   );
 }
