@@ -455,12 +455,12 @@ export default function SettingsPage() {
         </section>
       </div>
 
-      <div className="mt-6 flex gap-3">
-        <button className="btn btn-success" onClick={save} type="button">Save settings</button>
+      <div className="mt-8 flex gap-4">
+        <button className="btn btn-success btn-lg font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 px-8" onClick={save} type="button">💾 Save settings</button>
 
-        <button className="rounded-2xl border px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800" onClick={reloadFromStorage} type="button">Reload</button>
+        <button className="btn btn-outline btn-lg font-medium shadow-md hover:shadow-lg transition-all duration-200" onClick={reloadFromStorage} type="button">🔄 Reload</button>
 
-        <button className="rounded-2xl border px-4 py-2 text-red-600 hover:bg-red-50" onClick={resetToDefaults} type="button">Reset to defaults</button>
+        <button className="btn btn-error btn-lg font-medium shadow-md hover:shadow-lg transition-all duration-200" onClick={resetToDefaults} type="button">🗑️ Reset to defaults</button>
       </div>
 
       <section className="mt-6 text-sm text-gray-600 dark:text-gray-300">

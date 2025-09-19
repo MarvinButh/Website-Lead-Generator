@@ -187,31 +187,42 @@ export default function LeadSearchForm() {
       <form onSubmit={onSubmit} className="mt-6 grid gap-3">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="sm:col-span-2">
-            <label className="label-text">Keywords</label>
+            <label className="label">
+              <span className="label-text font-medium">Keywords</span>
+              <span className="label-text-alt tooltip" data-tip="Comma-separated search terms">?</span>
+            </label>
             <input
               type="text"
               value={keywords}
               onChange={(e) => setKeywords(e.target.value)}
-              placeholder="Comma-separated search tags"
-              className="input input-bordered w-full"
+              placeholder="e.g. restaurant, hotel, bakery"
+              className="input input-bordered input-lg w-full font-medium placeholder:text-base-content/40"
             />
           </div>
           <div>
-            <label className="label-text">City</label>
+            <label className="label">
+              <span className="label-text font-medium">City</span>
+              <span className="label-text-alt tooltip" data-tip="Target city for search">?</span>
+            </label>
             <input
               type="text"
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              className="input input-bordered w-full"
+              placeholder="Berlin"
+              className="input input-bordered input-lg w-full font-medium placeholder:text-base-content/40"
             />
           </div>
           <div>
-            <label className="label-text">Country Code</label>
+            <label className="label">
+              <span className="label-text font-medium">Country Code</span>
+              <span className="label-text-alt tooltip" data-tip="ISO country code">?</span>
+            </label>
             <input
               type="text"
               value={countryCode}
               onChange={(e) => setCountryCode(e.target.value)}
-              className="input input-bordered w-full"
+              placeholder="DE"
+              className="input input-bordered input-lg w-full font-medium placeholder:text-base-content/40"
             />
           </div>
         </div>
@@ -260,9 +271,9 @@ export default function LeadSearchForm() {
           <button
             type="submit"
             disabled={loading}
-            className="btn btn-primary"
+            className="btn btn-primary btn-lg font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 px-8"
           >
-            {loading ? "Generating..." : "Generate leads"}
+            {loading ? "🔄 Generating..." : "🚀 Generate leads"}
           </button>
         </div>
 

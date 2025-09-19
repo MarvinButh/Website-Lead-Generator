@@ -160,28 +160,39 @@ const LeadsPage = () => {
 		<>
 			<h1 className="text-3xl font-bold mb-4">Leads</h1>
 
-			<div className="mb-4 flex items-center justify-between gap-4">
-				<div className="flex items-center gap-2">
-					<input
-						value={filter}
-						onChange={(e) => {
-							setFilter(e.target.value);
-							setPage(1);
-						}}
-						placeholder="Search leads (name, city, etc.)"
-						className="input input-bordered w-64"
-					/>
+			<div className="mb-6 flex items-center justify-between gap-4">
+				<div className="flex items-center gap-3">
+					<div className="form-control w-80">
+						<label className="label">
+							<span className="label-text font-medium">Search leads</span>
+							<span className="label-text-alt tooltip" data-tip="Search by name, city, industry">?</span>
+						</label>
+						<div className="relative">
+							<input
+								value={filter}
+								onChange={(e) => {
+									setFilter(e.target.value);
+									setPage(1);
+								}}
+								placeholder="Search by company, city, industry..."
+								className="input input-bordered input-lg w-full pr-12 font-medium placeholder:text-base-content/40"
+							/>
+							<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 absolute right-4 top-1/2 transform -translate-y-1/2 text-base-content/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+							</svg>
+						</div>
+					</div>
 					<button
 						onClick={() => {
 							setFilter("");
 							setPage(1);
 						}}
-						className="text-sm text-gray-500"
+						className="btn btn-outline btn-lg font-medium hover:btn-error transition-all duration-200"
 					>
 						Clear
 					</button>
 				</div>
-				<div className="text-sm text-gray-500">
+				<div className="text-sm opacity-70 bg-base-200 px-4 py-2 rounded-lg">
 					Page {page} of {Math.max(1, Math.ceil(total / PAGE_SIZE))}
 				</div>
 			</div>
@@ -217,10 +228,10 @@ const LeadsPage = () => {
 			</div>
 			
 			{/* Tab controls */}
-			<div className="mt-3 flex gap-2">
-				<button className={`btn btn-sm ${status==='all'?'btn-primary':'btn-outline'}`} onClick={()=>setStatus('all')}>All</button>
-				<button className={`btn btn-sm ${status==='interested'?'btn-primary':'btn-outline'}`} onClick={()=>setStatus('interested')}>Interested</button>
-				<button className={`btn btn-sm ${status==='discarded'?'btn-primary':'btn-outline'}`} onClick={()=>setStatus('discarded')}>Not Interested</button>
+			<div className="mt-6 flex gap-3">
+				<button className={`btn btn-md font-medium shadow-md hover:shadow-lg transition-all duration-200 ${status==='all'?'btn-primary':'btn-outline'}`} onClick={()=>setStatus('all')}>All Leads</button>
+				<button className={`btn btn-md font-medium shadow-md hover:shadow-lg transition-all duration-200 ${status==='interested'?'btn-primary':'btn-outline'}`} onClick={()=>setStatus('interested')}>✓ Interested</button>
+				<button className={`btn btn-md font-medium shadow-md hover:shadow-lg transition-all duration-200 ${status==='discarded'?'btn-primary':'btn-outline'}`} onClick={()=>setStatus('discarded')}>✗ Not Interested</button>
 			</div>
 		</>
 	);

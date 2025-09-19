@@ -67,21 +67,21 @@ export default function ManageLeadsActions({ page, setPage, total, pageSize = 10
         <button
           onClick={onFilter}
           disabled={!!loading}
-          className="btn btn-warning btn-sm"
+          className="btn btn-warning btn-md font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200"
         >
           {loading === "filter" ? "Filtering..." : "Filter Leads"}
         </button>
         <button
           onClick={onGenerateOffers}
           disabled={!!loading}
-          className="btn btn-success btn-sm"
+          className="btn btn-success btn-md font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200"
         >
           {loading === "offers" ? "Generating Offers..." : "Generate Offers"}
         </button>
         <button
           onClick={onClear}
           disabled={!!loading}
-          className="btn btn-error btn-sm"
+          className="btn btn-error btn-md font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200"
         >
           {loading === "clear" ? "Clearing..." : "Clear Leads"}
         </button>
@@ -95,15 +95,15 @@ export default function ManageLeadsActions({ page, setPage, total, pageSize = 10
           <button
             onClick={() => setPage(Math.max(1, (page || 1) - 1))}
             disabled={(page || 1) <= 1}
-            className="btn btn-outline btn-sm"
+            className="btn btn-outline btn-md font-medium shadow-sm hover:shadow-md transition-all duration-200"
           >
             Prev
           </button>
-          <div className="text-sm opacity-70">Page {page} of {Math.max(1, Math.ceil((total || 0) / (pageSize || 1)))}</div>
+          <div className="text-sm opacity-70 px-4 py-2 bg-base-200 rounded-lg">Page {page} of {Math.max(1, Math.ceil((total || 0) / (pageSize || 1)))}</div>
           <button
             onClick={() => setPage((page || 1) + 1)}
             disabled={(page || 1) * (pageSize || 1) >= (total || 0)}
-            className="btn btn-outline btn-sm"
+            className="btn btn-outline btn-md font-medium shadow-sm hover:shadow-md transition-all duration-200"
           >
             Next
           </button>
