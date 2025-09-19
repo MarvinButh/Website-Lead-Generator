@@ -131,14 +131,19 @@ export default function SideBar() {
             </span>
             <span>Dark mode</span>
           </span>
-          <input
-            type="checkbox"
-            className="toggle toggle-sm toggle-primary"
-            checked={isDark}
-            onChange={() => {}} // Controlled by the button click
-            readOnly
-            aria-label="Toggle dark mode"
-          />
+          <span
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+              isDark ? "bg-primary" : "bg-base-300"
+            }`}
+            role="switch"
+            aria-checked={isDark}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                isDark ? "translate-x-4" : "translate-x-1"
+              }`}
+            />
+          </span>
         </button>
 
         <div className="mt-2">

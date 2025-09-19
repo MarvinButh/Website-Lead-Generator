@@ -27,11 +27,16 @@ const noFlash = `(() => {
   try {
     const storageKey = 'theme-preference';
     const stored = localStorage.getItem(storageKey);
-    const mql = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
-    const isDark = stored ? stored === 'dark' : !!(mql && mql.matches);
+    // Only use stored preference, default to light if none exists
+    const isDark = stored === 'dark';
     const root = document.documentElement;
-    if (isDark) root.classList.add('dark');
-    else root.classList.remove('dark');
+    if (isDark) {
+      root.classList.add('dark');
+      root.setAttribute('data-theme', 'dark');
+    } else {
+      root.classList.remove('dark');
+      root.setAttribute('data-theme', 'light');
+    }
   } catch {}
 })();`;
 
@@ -62,7 +67,7 @@ export default function RootLayout({
                     <SideBar />
                   </div>
 
-                  <main className="flex-1 w-full overflow-auto">
+                  <main className="flex-1 w-full overflow-auto p-6">
                     <PageTransition>
                       {children}
                     </PageTransition>

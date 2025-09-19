@@ -19,11 +19,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window === "undefined") return "light";
     const stored = window.localStorage.getItem(THEME_STORAGE_KEY) as Theme | null;
-    if (stored === "light" || stored === "dark") return stored;
-    // Fallback to system
-    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
+    // Always use stored preference first, default to light if none exists
+    return stored === "light" || stored === "dark" ? stored : "light";
   });
 
   // Apply/remove the `dark` class on <html> so Tailwind `dark:` styles work

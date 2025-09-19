@@ -23,30 +23,30 @@ const config = {
     themes: [
       {
         light: {
-          primary: "#6366f1", // indigo-500, matches --brand
-          secondary: "#8b5cf6", // violet-500
-          accent: "#06b6d4", // cyan-500
-          neutral: "#1f2937", // gray-800
-          "base-100": "#f7fafc", // matches --background light
-          "base-200": "#edf2f7", // slightly darker
-          "base-300": "#e2e8f0", // even darker
-          info: "#3b82f6", // blue-500
-          success: "#10b981", // emerald-500
-          warning: "#f59e0b", // amber-500
-          error: "#ef4444", // red-500
+          primary: "#3742fa", // Blue from US palette (Bright Blue)
+          secondary: "#5352ed", // Purple from US palette (Light Blue)
+          accent: "#2ed573", // Green from US palette (Mint Green)
+          neutral: "#747d8c", // Gray from US palette (Blue Grey)
+          "base-100": "#ffffff", // White
+          "base-200": "#f1f2f6", // Light Gray from US palette (Lighter)
+          "base-300": "#ddd", // Medium Gray
+          info: "#70a1ff", // Light Blue from US palette (Jordy Blue)
+          success: "#2ed573", // Mint Green from US palette
+          warning: "#ffa502", // Orange from US palette (Bright Orange)
+          error: "#ff3838", // Red from US palette (Red Orange)
         },
         dark: {
-          primary: "#6366f1", // indigo-500, matches --brand
-          secondary: "#8b5cf6", // violet-500
-          accent: "#06b6d4", // cyan-500
-          neutral: "#e6eef8", // matches --foreground dark
-          "base-100": "#071226", // matches --background dark
-          "base-200": "#0b1226", // matches --navy-800
-          "base-300": "#1e293b", // slightly lighter
-          info: "#3b82f6", // blue-500
-          success: "#10b981", // emerald-500
-          warning: "#f59e0b", // amber-500
-          error: "#ef4444", // red-500
+          primary: "#3742fa", // Blue from US palette (Bright Blue)
+          secondary: "#5352ed", // Purple from US palette (Light Blue)
+          accent: "#2ed573", // Green from US palette (Mint Green)
+          neutral: "#a4b0be", // Light Gray from US palette
+          "base-100": "#2f3542", // Dark Blue Gray from US palette
+          "base-200": "#40407a", // Dark Blue from US palette
+          "base-300": "#57606f", // Gray Blue from US palette
+          info: "#70a1ff", // Light Blue from US palette (Jordy Blue)
+          success: "#2ed573", // Mint Green from US palette
+          warning: "#ffa502", // Orange from US palette (Bright Orange)
+          error: "#ff3838", // Red from US palette (Red Orange)
         },
       },
     ],
