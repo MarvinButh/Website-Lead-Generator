@@ -55,8 +55,9 @@ const config = {
     styled: true,
     utils: true,
     prefix: "",
-    logs: true,
+    logs: false,
     themeRoot: ":root",
+    respectPrefersColorScheme: false, // Disable automatic theme detection
   },
 };
 

@@ -74,80 +74,81 @@ export default function SideBar() {
   ];
 
   return (
-    <aside className="drawer-side">
-      <div className="flex h-full w-64 flex-col bg-base-200 text-base-content border-r border-base-300">
-        {/* Top brand */}
-        <div className="flex items-center gap-3 p-3">
-          <div className="avatar placeholder">
-            <div className="bg-primary text-primary-content rounded-md w-9">
-              <span className="text-lg font-bold">WL</span>
-            </div>
-          </div>
-          <div>
-            <div className="text-sm uppercase tracking-wider opacity-70">Website</div>
-            <div className="text-base font-semibold">Lead Dashboard</div>
-          </div>
+    <aside className="flex h-full w-64 flex-col border-r border-base-300 bg-base-200 text-base-content">
+      {/* Top brand */}
+      <div className="flex items-center gap-3 p-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-content">
+          {/* Simple logo glyph */}
+          <span className="text-lg font-bold">WL</span>
         </div>
-        <div className="divider my-0" />
+        <div>
+          <div className="text-sm uppercase tracking-wider opacity-70">Website</div>
+          <div className="text-base font-semibold">Lead Dashboard</div>
+        </div>
+      </div>
+      <div className="divider my-0" />
 
-        {/* Navigation */}
-        <nav className="flex-1 px-2 py-3">
-          <ul className="menu menu-sm">
-            {items.map((item) => (
-              <li key={item.key}>
-                <button
-                  onClick={item.onClick}
-                  className={item.isActive ? "active" : ""}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </nav>
+      {/* Navigation */}
+      <nav className="flex-1 px-2 py-3">
+        {items.map((item) => (
+          <button
+            key={item.key}
+            onClick={item.onClick}
+            className={`group flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors hover:bg-base-300 ${
+              item.isActive ? "bg-base-300" : ""
+            }`}
+          >
+            <span className="opacity-70 group-hover:opacity-100">
+              {item.icon}
+            </span>
+            <span className="truncate">{item.label}</span>
+          </button>
+        ))}
+      </nav>
 
-        <div className="divider my-0" />
+      <div className="divider my-0" />
 
-        {/* Bottom section: dark mode + help */}
-        <div className="p-3">
-          <div className="form-control">
-            <label className="label cursor-pointer">
-              <span className="label-text flex items-center gap-3">
-                <span aria-hidden>
-                  {isDark ? (
-                    // Moon icon
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-                      <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
-                    </svg>
-                  ) : (
-                    // Sun icon
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-                      <path d="M6.76 4.84l-1.8-1.79-1.41 1.41 1.79 1.8 1.42-1.42zM1 13h3v-2H1v2zm10 10h2v-3h-2v3zm9-10v-2h-3v2h3zM17.24 4.84l1.42 1.42 1.79-1.8-1.41-1.41-1.8 1.79zM12 6a6 6 0 100 12A6 6 0 0012 6zm7.66 12.95l1.41 1.41 1.8-1.79-1.42-1.42-1.79 1.8zM4.84 17.24l-1.8 1.79 1.41 1.41 1.8-1.79-1.41-1.41z" />
-                    </svg>
-                  )}
-                </span>
-                Dark mode
-              </span>
-              <input
-                type="checkbox"
-                className="toggle toggle-primary"
-                checked={isDark}
-                onChange={toggle}
-                aria-label="Toggle dark mode"
-              />
-            </label>
-          </div>
+      {/* Bottom section: dark mode + help */}
+      <div className="p-3">
+        <button
+          onClick={toggle}
+          className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm hover:bg-base-300"
+          aria-label="Toggle dark mode"
+        >
+          <span className="flex items-center gap-3">
+            <span className="opacity-70" aria-hidden>
+              {isDark ? (
+                // Moon icon
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+                  <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+                </svg>
+              ) : (
+                // Sun icon
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+                  <path d="M6.76 4.84l-1.8-1.79-1.41 1.41 1.79 1.8 1.42-1.42zM1 13h3v-2H1v2zm10 10h2v-3h-2v3zm9-10v-2h-3v2h3zM17.24 4.84l1.42 1.42 1.79-1.8-1.41-1.41-1.8 1.79zM12 6a6 6 0 100 12A6 6 0 0012 6zm7.66 12.95l1.41 1.41 1.8-1.79-1.42-1.42-1.79 1.8zM4.84 17.24l-1.8 1.79 1.41 1.41 1.8-1.79-1.41-1.41z" />
+                </svg>
+              )}
+            </span>
+            <span>Dark mode</span>
+          </span>
+          <input
+            type="checkbox"
+            className="toggle toggle-sm toggle-primary"
+            checked={isDark}
+            onChange={() => {}} // Controlled by the button click
+            readOnly
+            aria-label="Toggle dark mode"
+          />
+        </button>
 
-          <div className="mt-2">
-            <button
-              onClick={go("/help")}
-              className="btn btn-ghost btn-sm w-full justify-start gap-3"
-            >
-              <span className="badge badge-ghost badge-sm">?</span>
-              <span>Help</span>
-            </button>
-          </div>
+        <div className="mt-2">
+          <button
+            onClick={go("/help")}
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-base-300"
+          >
+            <span className="flex h-5 w-5 items-center justify-center rounded-full border border-current text-xs opacity-70">?</span>
+            <span>Help</span>
+          </button>
         </div>
       </div>
     </aside>
