@@ -169,7 +169,7 @@ const LeadsPage = () => {
 							setPage(1);
 						}}
 						placeholder="Search leads (name, city, etc.)"
-						className="px-3 py-2 border rounded w-64 bg-white dark:bg-gray-800"
+						className="input input-bordered w-64"
 					/>
 					<button
 						onClick={() => {
@@ -189,7 +189,7 @@ const LeadsPage = () => {
 			<ManageLeadsActions page={page} setPage={setPage} total={total} pageSize={PAGE_SIZE} />
 
 			<div className="h-[72vh]">
-				<section className="bg-white dark:bg-gray-800 rounded shadow p-4 overflow-y-auto h-full" ref={listRef}>
+				<section className="card bg-base-100 shadow rounded p-4 overflow-y-auto h-full" ref={listRef}>
 					<div className="flex items-center justify-between mb-3">
 						<h2 className="text-lg font-semibold">Leads</h2>
 						<div className="text-sm text-gray-500">Showing {leads.length} of {total}</div>
@@ -218,9 +218,9 @@ const LeadsPage = () => {
 			
 			{/* Tab controls */}
 			<div className="mt-3 flex gap-2">
-				<button className={`px-3 py-1 rounded ${status==='all'?'bg-blue-600 text-white':'bg-white'}`} onClick={()=>setStatus('all')}>All</button>
-				<button className={`px-3 py-1 rounded ${status==='interested'?'bg-blue-600 text-white':'bg-white'}`} onClick={()=>setStatus('interested')}>Interested</button>
-				<button className={`px-3 py-1 rounded ${status==='discarded'?'bg-blue-600 text-white':'bg-white'}`} onClick={()=>setStatus('discarded')}>Not Interested</button>
+				<button className={`btn btn-sm ${status==='all'?'btn-primary':'btn-outline'}`} onClick={()=>setStatus('all')}>All</button>
+				<button className={`btn btn-sm ${status==='interested'?'btn-primary':'btn-outline'}`} onClick={()=>setStatus('interested')}>Interested</button>
+				<button className={`btn btn-sm ${status==='discarded'?'btn-primary':'btn-outline'}`} onClick={()=>setStatus('discarded')}>Not Interested</button>
 			</div>
 		</>
 	);

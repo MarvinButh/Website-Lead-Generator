@@ -67,26 +67,26 @@ export default function ManageLeadsActions({ page, setPage, total, pageSize = 10
         <button
           onClick={onFilter}
           disabled={!!loading}
-          className="inline-flex items-center justify-center rounded bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+          className="btn btn-warning btn-sm"
         >
           {loading === "filter" ? "Filtering..." : "Filter Leads"}
         </button>
         <button
           onClick={onGenerateOffers}
           disabled={!!loading}
-          className="inline-flex items-center justify-center rounded bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+          className="btn btn-success btn-sm"
         >
           {loading === "offers" ? "Generating Offers..." : "Generate Offers"}
         </button>
         <button
           onClick={onClear}
           disabled={!!loading}
-          className="inline-flex items-center justify-center rounded bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+          className="btn btn-error btn-sm"
         >
           {loading === "clear" ? "Clearing..." : "Clear Leads"}
         </button>
-        {message && <span className="text-sm text-gray-700 dark:text-gray-300">{message}</span>}
-        {error && <span className="text-sm text-red-600">{error}</span>}
+        {message && <span className="text-sm text-base-content opacity-70">{message}</span>}
+        {error && <span className="text-sm text-error">{error}</span>}
       </div>
 
       {/* Pagination actions on the right, separated by space */}
@@ -95,15 +95,15 @@ export default function ManageLeadsActions({ page, setPage, total, pageSize = 10
           <button
             onClick={() => setPage(Math.max(1, (page || 1) - 1))}
             disabled={(page || 1) <= 1}
-            className="rounded px-3 py-1 bg-white border text-sm"
+            className="btn btn-outline btn-sm"
           >
             Prev
           </button>
-          <div className="text-sm text-gray-600">Page {page} of {Math.max(1, Math.ceil((total || 0) / (pageSize || 1)))}</div>
+          <div className="text-sm opacity-70">Page {page} of {Math.max(1, Math.ceil((total || 0) / (pageSize || 1)))}</div>
           <button
             onClick={() => setPage((page || 1) + 1)}
             disabled={(page || 1) * (pageSize || 1) >= (total || 0)}
-            className="rounded px-3 py-1 bg-white border text-sm"
+            className="btn btn-outline btn-sm"
           >
             Next
           </button>

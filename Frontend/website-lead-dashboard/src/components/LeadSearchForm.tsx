@@ -187,31 +187,31 @@ export default function LeadSearchForm() {
       <form onSubmit={onSubmit} className="mt-6 grid gap-3">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="sm:col-span-2">
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Keywords</label>
+            <label className="label-text">Keywords</label>
             <input
               type="text"
               value={keywords}
               onChange={(e) => setKeywords(e.target.value)}
               placeholder="Comma-separated search tags"
-              className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+              className="input input-bordered w-full"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">City</label>
+            <label className="label-text">City</label>
             <input
               type="text"
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+              className="input input-bordered w-full"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Country Code</label>
+            <label className="label-text">Country Code</label>
             <input
               type="text"
               value={countryCode}
               onChange={(e) => setCountryCode(e.target.value)}
-              className="w-full rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+              className="input input-bordered w-full"
             />
           </div>
         </div>
@@ -219,7 +219,7 @@ export default function LeadSearchForm() {
         <div className="flex items-center gap-6">
           {/* Radio group: choose Google Places or OSM Overpass */}
           <div className="inline-flex items-center gap-4">
-            <label className={`inline-flex items-center gap-2 text-sm dark:text-gray-200 ${!googleAvailable ? 'opacity-50 cursor-not-allowed' : 'text-gray-700'}`} title={!googleAvailable ? 'Google Places API key not set (set it in Settings)' : 'Use Google Places API'}>
+            <label className={`inline-flex items-center gap-2 text-sm ${!googleAvailable ? 'opacity-50 cursor-not-allowed' : ''}`} title={!googleAvailable ? 'Google Places API key not set (set it in Settings)' : 'Use Google Places API'}>
               <input
                 type="radio"
                 name="searchProvider"
@@ -230,12 +230,12 @@ export default function LeadSearchForm() {
                   saveOverrides({ defaultUseOverpass: false });
                 }}
                 disabled={!googleAvailable}
-                className="accent-blue-600"
+                className="radio radio-primary"
               />
               Google Places
             </label>
 
-            <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+            <label className="inline-flex items-center gap-2 text-sm">
               <input
                 type="radio"
                 name="searchProvider"
@@ -245,14 +245,14 @@ export default function LeadSearchForm() {
                   setSearchProvider('overpass');
                   saveOverrides({ defaultUseOverpass: true });
                 }}
-                className="accent-blue-600"
+                className="radio radio-primary"
               />
               Use OSM Overpass
             </label>
-            <button type="button" onClick={() => { setTempKey(googleKey); setShowKeyModal(true); }} className="ml-2 text-xs text-blue-600 hover:underline">Manage API key</button>
+            <button type="button" onClick={() => { setTempKey(googleKey); setShowKeyModal(true); }} className="link link-primary text-xs">Manage API key</button>
           </div>
-          <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
-            <input type="checkbox" checked={autoFilter} onChange={(e) => setAutoFilter(e.target.checked)} /> Auto-filter & generate offers
+          <label className="inline-flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={autoFilter} onChange={(e) => setAutoFilter(e.target.checked)} className="checkbox checkbox-primary" /> Auto-filter & generate offers
           </label>
         </div>
 
@@ -260,7 +260,7 @@ export default function LeadSearchForm() {
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex items-center justify-center rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="btn btn-primary"
           >
             {loading ? "Generating..." : "Generate leads"}
           </button>
@@ -282,7 +282,7 @@ export default function LeadSearchForm() {
         )}
 
         {result && (
-          <p className="text-sm text-gray-600 dark:text-gray-300">
+          <p className="text-sm opacity-70">
             Inserted {result.inserted} rows (found {result.found}).
             {typeof result.filtered === "number" || typeof result.offers_generated === "number" ? (
               <>
@@ -294,7 +294,7 @@ export default function LeadSearchForm() {
           </p>
         )}
         {error && (
-          <p className="text-sm text-red-600">{error}</p>
+          <p className="text-sm text-error">{error}</p>
         )}
       </form>
 
